@@ -1,0 +1,492 @@
+---
+title: "Correlation And Regression"
+author: "Uzezi Okinedo"
+date: "10/14/2020"
+output: html_document
+---
+
+### <span style="color: red;"> Excellent! 80/78 points </span>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(broom)
+library(MASS)
+library(ggfortify)
+
+```
+
+
+```{r download data}
+
+# download all W&S data
+download.file(url = "https://whitlockschluter.zoology.ubc.ca/wp-content/data/ABD_all_data.zip",
+              destfile = "raw_data/all_data.zip")
+
+```
+
+
+**1. Correlation - W&S Chapter 16**
+
+```{r load data}
+
+# read data
+michelli_data <- read.csv("./raw_data/all_data/chapter16/chap16q15LanguageGreyMatter.csv")
+
+# view data
+michelli_data
+
+
+```
+
+**a.** Display the association between the two variables in a scatter plot.
+
+```{r display association between the two variables}
+
+# Basic scatter plot using ggplot2
+ggplot(michelli_data, aes(x= proficiency, y= greymatter)) +
+  geom_point()
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+**b.** Calculate the correlation between second language proficiency and gray-matter density.
+
+```{r correlation between second language proficiency and grey-matter}
+
+# use the cor() to calculate correlation
+cor(michelli_data$proficiency, michelli_data$greymatter)
+```
+The correlation between second language proficiency and grey matter density is 0.8183134
+
+### <span style="color: red;"> 3/3 points </span>
+
+**c.** Test the null hypothesis of zero correlation.
+
+```{r test null hypothesis of zero correlation}
+
+# Fit a model
+michelli_lm <- lm(greymatter ~ proficiency, data = michelli_data)
+# use anova to check p-value
+anova(michelli_lm) %>%
+  # use tidy() to summarize model statistical findings
+  tidy()
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+**d.** What are your assumptions in part (c)?
+
+i) The population correlation co-efficient (p) is not significantly different from zero. Therefore, a regression line cannot be used in modeling a relationship between second language proficiency and gray matter density.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**e.** Does the scatter plot support these assumptions? Explain.
+
+Yes, the scatter plot explains these assumptions. The plot shows an association between second language proficiency and gray matter density but fails to show any linear relationship between both variables as data points are not in a straight line along the plot.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**f.** Do the results demonstrate that second language proficiency affects gray-matter density in
+the brain? Why or why not?
+
+No, these results do not demonstrate if second language proficiency affects gray-matter density because the population correlation co-efficient or p-value is close to 0. Therefore, the sample data cannot be used to infer any relationship.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**2. Correlation - W&S Chapter 16**
+
+```{r read second data}
+
+liver_data <- read.csv("./raw_data/all_data/chapter16/chap16q19LiverPreparation.csv")
+
+liver_data
+
+```
+
+**a.** Calculate the correlation coefficient between the taurocholate unbound fraction and the concentration.
+
+```{r correlation coefficient between the taurocholate unbound fraction and the concentration}
+
+
+cor(liver_data$concentration, liver_data$unboundFraction)
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+**b.** Plot the relationship between the two variables in a graph.
+
+```{r plot the relationship between the two variables}
+
+# Basic scatter plot using ggplot2
+ggplot(liver_data, aes(x= concentration, y= unboundFraction)) +
+  geom_point()
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+**c.** Examine the plot in part (b). The relationship appears to be maximally strong, yet the correlation coefficient you calculated in part (a) is not near the maximum possible value. Why not?
+
+The variables do not meet the assumptions of bivariate normality and points appear to form a curve which explains the disparity between the plot and the calculated correlation.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**d.** What steps would you take with these data to meet the assumptions of correlation analysis?
+
+i) Log transformation of varibales
+
+ii) Nonparametric Spearman’s rank correlation can be used as a test of zero correlation between variables that do not meet the assumption of bivariate normality, even after data transformation.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**3. Correlation SE**
+
+Consider the following dataset:
+
+```{r dataframe}
+
+cat <- c(-0.30, 0.42, 0.85, -0.45, 0.22, -0.12, 1.46, -0.79, 0.40, -0.07)
+happiness_score <- c(-0.57, -0.10, -0.04, -0.29, 0.42, -0.92, 0.99, -0.62, 1.14, 0.33)
+
+data_set <- data.frame(cat, happiness_score)
+
+data_set
+
+```
+
+**3a.** Are these two variables correlated? What is the output of cor() here. What does a test show you?
+
+```{r check the correlation of the values}
+
+# Basic scatter plot using ggplot2 to check the association between the variables
+ggplot(data_set, aes(x= cat, y= happiness_score)) +
+  geom_point()
+
+# using the cor() function to calculate the correlation
+cor(data_set$cat, data_set$happiness_score)
+
+# testing correlation using Anova
+data_set_lm <- lm(happiness_score ~ cat, data =data_set)
+
+anova(data_set_lm) %>%
+  tidy()
+
+
+
+```
+
+-From the scatter plot, these values do not show correlation.
+- The value obtained by using the cor() is 0.6758738
+- The Anova test shows a p-value < 0.05 which confirms no correlation as a regression line cannot be used to model any relationship between the two variables.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**3b.** What is the SE of the correlation based on the info from cor.test()
+
+```{r SE of the correlation based on the info from cor.test()}
+
+# create a function that calculates the standard error from the info of cor.test
+cor.test.plus <- function(x) {
+  list(x, 
+       Standard.Error = unname(sqrt((1 - x$estimate^2)/x$parameter)))
+}
+
+# use function to determine SE
+cor.test.plus(cor.test(data_set$cat, data_set$happiness_score))
+
+
+```
+The standard error is 0.260575
+
+### <span style="color: red;"> 3/3 points </span>
+
+**3c.**Now, what is the SE via simulation? To do this, you’ll need to use cor() and get the relevant parameter from the output (remember - you get a matrix back, so, what’s the right index!), replicate(), and sample() or dplyr::sample_n() with replace=TRUE to get, let’s say, 1000 correlations. How does this compare to your value above?
+
+```{r SE via simulation}
+
+# create an object for correlation values of the data_set
+cor_data <- cor(data_set)
+# view parameters in the created object
+cor_data
+
+# list parameters;
+# N = number of replications or simulations
+N = 1000
+# r = correlation value
+r = 0.6758738
+# n = length of dataframe
+n = 10
+
+# use the replicate function to simulate SE 1000x 
+replicate(N, cor(mvrnorm(10, c(0,0), cor_data))[2,1], sqrt((1-r^2)/(n-2)))
+
+
+
+
+```
+The simulated values of the standard error are significantly higher than the initial calculated value.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**4. W&S Chapter 17**
+
+```{r read in data}
+
+# read in nutrient data
+nutrient_data <- read.csv("./raw_data/all_data/chapter17/chap17q19GrasslandNutrientsPlantSpecies.csv")
+
+# view nutrient data
+nutrient_data
+
+```
+
+**a.** Draw a scatter plot of these data. Which variable should be the explanatory variable (X), and which should be the response variable (Y)?
+
+```{r scatter plot of nutrient data}
+
+# Basic scatter plot using ggplot2
+ggplot(nutrient_data, aes(x= species, y= nutrients)) +
+  geom_point()
+
+```
+The explanatory variable(X) is "species" while the response variable(Y) is "nutrients".
+
+### <span style="color: red;"> 3/3 points </span>
+
+**b.** What is the rate of change in the number of plant species supported per nutrient type
+added? Provide a standard error for your estimate.
+
+```{r rate of change in the number of plant species supported per nutrient type}
+
+fit.lm <-lm(nutrients ~ species, data = nutrient_data)
+slope <- coef(fit.lm)
+slope
+
+# rate=(slope)nutrients+(intercept)
+fit.lm$coefficient[1] + fit.lm$coefficient[2]
+
+```
+The rate of change is 6.150132 .
+
+### <span style="color: red;"> 3/3 points </span>
+
+**c.** Add the least-squares regression line to your scatter plot. What fraction of the variation in the number of plant species is “explained” by the number of nutrients added?
+
+```{r least-squares regression line}
+
+# Fit a model
+nutrient_lm <- lm(nutrients ~ species, data = nutrient_data)
+# use anova to check p-value
+anova_tb <- anova(nutrient_lm) %>%
+  # use tidy() to summarize model statistical findings
+  tidy()
+
+anova_tb
+
+# R^2 = SS(regression)/SS(total)
+
+anova_tb[1,3]/(anova_tb[1,3] + anova_tb[2, 3])
+
+
+
+```
+The fraction of plant species explained by the nutrient added is 0.5359785	
+
+### <span style="color: red;"> 3/3 points </span>
+
+**d.** Test the null hypothesis of no treatment effect on the number of plant species.
+
+```{r Test the null hypothesis}
+
+# test the null hypothesis by checking whether regression mean square is greater than residual mean square 
+
+anova_tb[1,3] > anova_tb[2, 3]
+
+```
+
+The null hypothesis is false and hence, rejected because the regression mean square value is higher than the residual mean square value as shown in the ANOVA table in 4C above. That is; anova_tb[1,3] > anova_tb[2, 3].
+
+### <span style="color: red;"> ^Clever! 4/3 points </span>
+
+**5. W&S Chapter 17-25**
+
+```{r load beetle data}
+
+# load beetle data
+beetle <- read.csv("./raw_data/all_data/chapter17/chap17q25BeetleWingsAndHorns.csv")
+
+# view beetle data
+beetle
+
+```
+
+**a.** Use these results to calculate the residuals
+
+```{r calculate residuals}
+
+beetle_sims <- beetle %>%
+  mutate('Predicted_relative_wing_mass_mg' = c(-9.9, -10.6, -2.6, 2.4, -11.4, -10.9, -1.6, -3.2, -0.8, -1.1, -0.7, 0.1, 8.5, 8.5, 1.7, 1.7, 17.4, 18.8, 23.3))
+
+beetle_sims
+
+# Fit a model in the simulated beetle data.
+beetle_lm <- lm(Predicted_relative_wing_mass_mg ~ hornSize, data = beetle_sims)
+
+# calculate resduals from fit
+residual_data <- residuals(beetle_lm)
+
+# view residual values
+residual_data
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+**b.** Use your results from part (a) to produce a residual plot.
+
+```{r produce a residual plot}
+beet_new <- beetle %>%
+  mutate('residuals' = residual_data)
+
+residual_plot <- ggplot(beet_new, aes(x= hornSize, y= residuals)) +
+  geom_point()
+
+residual_plot
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+**c.** Use the graph provided and your residual plot to evaluate the main assumptions of linear regression.
+
+If the assumptions of normality and equal variance of residuals are not met because of the following reasons;
+
+i) For the residual plot; the cloud of points above the horizontal line at zero are asymmetric with more points below the line than above the line. On the other hand, the graph provided also violates the assumptions of normality as there are more points above the horizontal zero line than below it. 
+
+ii) No noticeable curvature observed as we move from left to right along the x-axis in the residual plot. 
+
+iii) No equal variance of points above and below the line at all values of X in both the residual plot and the graph provided.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**d.** In light of your conclusions in part (c), what steps should be taken?
+
+i) Log transformation to help meet the assumption of linear regression
+ii) Square root transformation to solve the problem of unequal variance.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**e.** Do any other diagnostics misbehave?
+
+Yes. Using noticeable curvature to evaluate the assumption of linear regression is not an effective diagnostic method.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**6. W&S Chapter 17-30**
+
+```{r load nuclear data}
+
+# load nuclear data
+nuclear <- read.csv("./raw_data/all_data/chapter17/chap17q30NuclearTeeth.csv")
+
+# view data
+nuclear
+
+```
+
+**a.** What is the approximate slope of the regression line?
+
+```{r approximate slope of regression line}
+
+# fit a regression line through the data points
+fit.lm <-lm( dateOfBirth ~ deltaC14, data = nuclear)
+slope <- coef(fit.lm)
+slope
+
+```
+The approximate slope of the regression line is **-0.053**
+
+### <span style="color: red;"> 3/3 points </span>
+
+**b.** Which pair of lines shows the confidence bands? What do these confidence bands tell us?
+
+The confidence bands are the pair of lines closest to the regression line. It shows the 95% confidence bands for the predicted mean date of births at every amount of Carbon 14. 
+
+### <span style="color: red;"> 3/3 points </span>
+
+**c.** Which pair of lines shows the prediction interval? What does this prediction interval tell us?
+
+The prediction intervals are the pair of lines farther away from the regression line. It shows the 95% prediction intervals for the predicted date of births of each cadaver. n = 16.
+
+### <span style="color: red;"> 3/3 points </span>
+
+**d.** Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+
+
+```{r reproduce the plot}
+
+# fit interval
+fit_nuclear <- predict(fit.lm,
+                    nuclear,
+                    interval = "confidence") %>%
+                    
+  as_tibble() %>%
+  rename(lwr_ci = lwr,
+         upr_ci = upr) 
+
+nuclear_ci <- cbind(nuclear$deltaC14, fit_nuclear)
+
+# prediction interval
+predict_nuclear <- predict(fit.lm,
+                           nuclear,
+                           interval = "prediction") %>%
+  as_tibble() %>%
+  rename(lwr_pi = lwr,
+         upr_pi = upr)
+
+# create a new nuclear dataset which includes the prediction and fit values
+new_nuclear <- nuclear_ci %>%
+  # mutate prediction and fit values to make a new dataframe
+   mutate('upper_pi' = predict_nuclear$upr_pi,
+          'lower_pi' = predict_nuclear$lwr_pi,
+          'date_of_birth' = nuclear$dateOfBirth)
+
+# view new dataframe          
+new_nuclear
+
+```
+
+```{r plot}
+
+ggplot(data = new_nuclear,
+       mapping = aes(x = nuclear$deltaC14,
+                     y = date_of_birth)) +
+  #prediction interval
+  geom_ribbon(mapping = aes(ymin = lower_pi,
+                            ymax = upper_pi),
+              color = "blue",
+              alpha = 0.1) +
+  # fit interval - just coefficient error (precision)
+  geom_ribbon(mapping = aes(ymin = lwr_ci,
+                            ymax = upr_ci),
+              color = "blue",
+              alpha = 0.1) +
+  geom_point() +
+  stat_smooth(method = "lm") #shows error around our FIT
+
+```
+
+### <span style="color: red;"> 3/3 points </span>
+
+[GitHub Extra Credit](https://github.com/Uzezi93/BIOL-607-Homework-Fall-2020-/blob/master/05_OKINEDO_UZEZI_2020.md) 
+

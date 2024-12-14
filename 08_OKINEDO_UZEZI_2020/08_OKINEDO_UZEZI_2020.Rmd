@@ -1,0 +1,552 @@
+---
+title: "GLM Practice"
+author: "Uzezi Okinedo"
+date: "11/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r librarries}
+
+# load libraries
+library(ggplot2)
+library(Rmisc)
+library(dplyr)
+library(modelr)
+library(emmeans)
+library(piecewiseSEM)
+library(car)
+library(tidyverse)
+library(doBy)
+library(ggpubr)
+library(MASS)
+library(profileModel)
+library(broom.mixed)
+library(brms)
+library(tidybayes)
+library(boot)
+library(ggdist)
+library(loo)
+library(modelr)
+
+```
+
+
+**1. Comparing Means**
+
+To start with, let’s warm up with a simple one-way ANOVA model. This example, from Whitlock and Schluter chapter 15 question 22 looks at the mass of lodgepole pinecones from different habitats.
+
+**1.1.** Load and plot the data. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
+
+```{r Whitlock and Schluter chapter 15}
+
+#load data
+lodgepole <- read.csv("./raw_data/all_data/chapter15/chap15q23LodgepolePineCones.csv")
+
+# view data
+head(lodgepole)
+
+# summarize mean, sd, se and ci of data using Rmisc::summarySE function
+lodgepole2 <- summarySE(lodgepole, measurevar="conemass", groupvars="habitat")
+
+# view summary table
+lodgepole2
+
+# plot
+# Error bars represent standard error of the mean
+ggplot(lodgepole2, aes(y=conemass, x=factor(habitat), fill =habitat)) + 
+    geom_bar(position=position_dodge(), stat="identity") +
+    geom_errorbar(aes(ymin=conemass-se, ymax=conemass+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9)) +
+  labs(y ="Cone Mass", x = "Habitat",
+       title = "SE of lodgecone pinecone mass at different habitats")
+
+
+# Use 95% confidence intervals instead of SEM
+ggplot(lodgepole2, aes(y=conemass, x=factor(habitat), fill =habitat)) + 
+    geom_bar(position=position_dodge(), stat="identity") +
+    geom_errorbar(aes(ymin=conemass-ci, ymax=conemass+ci),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9)) +
+  labs(y ="Cone Mass", x = "Habitat",
+       title = "CI of lodgecone pinecone mass at different habitats")
+
+
+```
+
+**1.2** Fit a model using least squares and evaluate all relevant assumptions. List them out as you test them. Can we use this model? If not, fix it. But if we can, no fix is needed!
+
+```{r fit a least squares}
+
+#exploring the data
+ggplot(lodgepole, mapping=aes(x=habitat, y=conemass)) +
+  stat_summary(color="red", size=1.3) +
+    geom_point(alpha=0.7) +
+  theme_bw(base_size=17)
+
+
+# fit a model
+lodgepole_glm <- glm(conemass ~ factor(habitat),
+                 data = lodgepole,
+                 family = gaussian(link = "identity"))
+
+
+# assumptions evaluation
+#The whole par thing lets me make a multi-panel plot
+par(mfrow=c(2,2))
+plot(lodgepole_glm, which=c(1,2,5))
+par(mfrow=c(1,1))
+
+# compare the distribution of residuals across each habitat
+lodgepole <- lodgepole %>%
+  add_residuals(lodgepole_glm)
+
+qplot(habitat, resid, data = lodgepole, geom = "boxplot")
+
+# F-test
+Anova(lodgepole_glm)
+
+
+#post-hocs tests
+lodgepole_em <- emmeans::emmeans(lodgepole_glm, specs = ~ habitat)
+lodgepole_em
+
+# contrast means 
+contrast(lodgepole_em, method = "tukey")
+
+# plot contrasts
+plot(contrast(lodgepole_em,
+        method = "tukey")) +
+  geom_vline(xintercept = 0, color = "red", lty=2)
+
+
+# see which groups are statistically the same versus different using cld
+multcomp::cld(lodgepole_em, adjust="tukey")
+
+
+# plot
+multcomp::cld(lodgepole_em, adjust="tukey") %>%
+  ggplot(aes(x = habitat, y = emmean, 
+             ymin = asymp.LCL, ymax = asymp.UCL,
+             color = factor(.group))) +
+  geom_pointrange() 
+
+
+```
+
+**1.2** How much variation is explained by your model?
+
+A significant amount of variation was explained by this model. Out of the three pairwise comparisons, two were significantly different where, p < 0.05
+
+**1.3** Show which means are different from each other. Are you correcting p-values? If so, how, and justify your choice.
+
+Yes, I am correcting p-values for easy detection of statistically significant differences between all pairwise comparisons.
+
+```{r p-value correction}
+
+# p-value correction
+contrast(lodgepole_em,
+        method = "tukey", adjust="bonferroni")
+
+
+```
+
+
+**2. Comparing Means from Multiple Categories**
+
+In a study from Rogers _et al_. (2020) link, the authors performed an experiment where they moved panels that had been colonized by invertebrates on a dock to a nearby rocky jetty where predators could access panels. To separate out the effects of changes in abiotic environment versus predation, they performed a factorial experiment, either caging or not caging panels and placing them either on the side of a cinder block or hanging on a piece of PVC attached to the block where predators would have little access (but weren’t entirely stopped). They then looked at change in total cover of invertebrates. Using this old data file dug off of my hard drive, let’s see what they found.
+
+**2.1.** Load and plot the data. We are interested in change in percent cover. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
+
+```{r load data}
+
+# download and read data directly and fix names using janitor::clean_names
+fouling <- read.csv("./raw_data/fouling_transplant_data.csv") %>%
+  janitor::clean_names()
+
+# view data
+head(fouling)
+
+
+# convert double to factor
+fouling2 <- fouling %>%
+  mutate_at(vars(botry_init, botry_fin, water_init, water_fin, diplo_init, diplo_fin, distap_init, distap_fin, bugula_init, bugula_fin, initial_cover, final_cover, change_in_cover), 
+            list(factor)) %>%
+  summarise(treatment, caged, position_on_block, change_in_cover)
+
+long_fouling2 <- fouling2 %>%
+  pivot_longer(cols = -c(treatment, caged, position_on_block),
+               names_to = "variables",
+               values_to = "results")
+
+# summarize mean, sd, se and ci of data using Rmisc::summarySE function
+sum_fouling <- summaryBy(results ~ treatment + caged + position_on_block, data=long_fouling2, FUN=c(length, mean, sd)) %>%
+  mutate(result.se = results.sd / sqrt(results.length)) %>%
+  pivot_longer(cols = c("treatment", "caged", "position_on_block"),
+               names_to = "conditions")
+  
+# view data
+head(sum_fouling)
+
+
+# plot
+# Error bars represent standard error of the mean
+ggplot(sum_fouling, aes(y=results.mean, x=value, fill =value)) +
+  facet_grid(. ~ conditions) +
+  geom_bar(stat="identity") +
+  geom_errorbar(aes(ymin=results.mean-result.se, ymax=results.mean+result.se),
+                  width=.2,                    # Width of the error bars
+                  position="identity") +
+  coord_flip() +
+  labs(y ="Mean values", x = "Treatments",
+       title = "Change in percent cover across blocks")
+
+```
+
+**2.2** Fit a model using likelihood and evaluate all relevant assumptions. Do you meet assumptions?
+
+```{r fit a likelihood model}
+
+# Factorial Anova
+
+# fit and assumption evaluation
+fouling_mle <- glm(change_in_cover ~ position_on_block*caged, data=fouling2, family="binomial")
+
+
+#The whole par thing lets me make a multi-panel plot
+par(mfrow=c(2,2))
+plot(fouling_mle, which=c(1,2,5))
+par(mfrow=c(1,1))
+
+
+# compare the distribution of residuals across each habitat
+fouling2 <- fouling2 %>%
+  add_residuals(fouling_mle)
+
+qplot(position_on_block, resid, data = fouling2, geom = "boxplot")
+
+
+# F-tests
+Anova(fouling_mle)
+
+# compare means
+fouling_mle_em <- emmeans(fouling_mle, ~position_on_block+caged)
+
+multcomp::cld(fouling_mle_em)
+
+# posthocs
+contrast(fouling_mle_em, method = "dunnett")
+
+# plot
+cont <- contrast(emmeans(fouling_mle, ~ position_on_block|caged), method = "tukey")
+
+plot(cont) +
+  geom_vline(xintercept = 0, color = "red", lty = 2)
+
+
+```
+
+All tested assumptions for this model were not met. Means were homogeneous and residuals of change could not be identified.
+
+
+**2.3** If you answered yes to the above…. you are wrong. It doesn’t! Percentage data is weird. Difference in percentages can be ever weirder! There are three tried and true solutions here. But they MIGHT not all work.
+
+Incorporate initial cover as a covariate. This takes out that influence, and as such we’re looking at residuals of change. This sometimes, but not always, works.
+
+```{r incorporate initial cover as a covariate}
+
+# Factorial Anova
+
+# fit and assumption evaluation
+fouling_mle <- glm(initial_cover ~ position_on_block*caged, data=fouling, family="gaussian")
+
+
+#The whole par thing lets me make a multi-panel plot
+par(mfrow=c(2,2))
+plot(fouling_mle, which=c(1,2,5))
+par(mfrow=c(1,1))
+
+
+# compare the distribution of residuals across each habitat
+fouling <- fouling %>%
+  add_residuals(fouling_mle)
+
+qplot(position_on_block, resid, data = fouling, geom = "boxplot")
+
+
+# F-tests
+Anova(fouling_mle)
+
+# compare means
+fouling_mle_em <- emmeans(fouling_mle, ~position_on_block+caged)
+
+multcomp::cld(fouling_mle_em)
+
+# posthocs
+contrast(fouling_mle_em, method = "dunnett")
+
+# plot
+cont <- contrast(emmeans(fouling_mle, ~ position_on_block|caged), method = "tukey")
+
+plot(cont) +
+  geom_vline(xintercept = 0, color = "red", lty = 2)
+
+
+
+```
+
+Divide change by initial cover to express change as percent change relative to initial cover.
+
+```{r divide change by initial cover}
+
+# add a column for percent change
+fouling <-  fouling %>%
+  mutate(percent_change = change_in_cover/initial_cover)
+
+# Factorial Anova
+
+# fit and assumption evaluation
+fouling_mle <- glm(percent_change ~ position_on_block*caged, data=fouling, family="gaussian")
+
+
+#The whole par thing lets me make a multi-panel plot
+par(mfrow=c(2,2))
+plot(fouling_mle, which=c(1,2,5))
+par(mfrow=c(1,1))
+
+
+# compare the distribution of residuals across each habitat
+fouling <- fouling %>%
+  add_residuals(fouling_mle)
+
+qplot(position_on_block, resid, data = fouling, geom = "boxplot")
+
+
+# F-tests
+Anova(fouling_mle)
+
+# compare means
+fouling_mle_em <- emmeans(fouling_mle, ~position_on_block+caged)
+
+multcomp::cld(fouling_mle_em)
+
+# posthocs
+contrast(fouling_mle_em, method = "dunnett")
+
+# contrast means
+cont <- contrast(emmeans(fouling_mle, ~ position_on_block|caged), method = "tukey")
+
+# plot contrast
+plot(cont) +
+  geom_vline(xintercept = 0, color = "red", lty = 2)
+
+
+```
+
+Calculate difference in logit cover (so, logit(initial cover) - logit(final cover)). Logit transformations linearize percent cover data, and are often all that is needed to work percent cover into a linear model. You can use car::logit() for this.
+
+```{r use Logit transformations}
+
+#create a logit column
+fouling <- fouling %>%
+  mutate(Log = car::logit(initial_cover) - car::logit(final_cover))
+
+# Factorial Anova
+
+# fit and assumption evaluation
+fouling_mle <- glm(Log ~ position_on_block*caged, data=fouling, family="gaussian")
+
+
+#The whole par thing lets me make a multi-panel plot
+par(mfrow=c(2,2))
+plot(fouling_mle, which=c(1,2,4,5))
+par(mfrow=c(1,1))
+
+
+# compare the distribution of residuals across each habitat
+fouling <- fouling %>%
+  add_residuals(fouling_mle)
+
+qplot(position_on_block, resid, data = fouling, geom = "boxplot")
+
+
+# F-tests
+Anova(fouling_mle)
+
+# compare means
+fouling_mle_em <- emmeans(fouling_mle, ~position_on_block+caged)
+
+multcomp::cld(fouling_mle_em)
+
+# posthocs
+contrast(fouling_mle_em, method = "dunnett")
+
+# p-value correction
+contrast(fouling_mle_em,
+        method = "tukey", adjust="bonferroni")
+
+
+# plot
+cont <- contrast(emmeans(fouling_mle, ~ position_on_block|caged), method = "tukey")
+
+plot(cont) +
+  geom_vline(xintercept = 0, color = "red", lty = 2)
+
+
+```
+
+Try all three methods. Which one works so that you can produce valid inference?
+
+The Logit transformation has more reasonable p-values(smaller numbers) compared to the other methods.
+
+**2.4** Great! So, take us home! Using NHST with an alpha of 0.08 (why not), what does this fit model tell you about whether predation matters given how I have described the system? Feel free to replot the data or fit model results if helpful.
+
+Significant difference was observed in only one group where p < 0.08 (Hanging Caged - Side Open). This shows that the arrangement of the panel has a strong effect on predation. Predators can have no access when the panel is caged and hanging and have maximum access when the panel is opened and placed by the side.
+
+
+**3. Comparing Means with Covariates**
+
+We will wrap up with a model mixing continuous and discrete variables. In this dataset from Scantlebury _et al_, the authors explored how caste and mass affected the energy level of naked mole rats.
+
+**3.1** OK, you know what you are about at this point. Load in the data, plot it, fit it, check assumptions. Use Bayes for this.
+
+```{r load data, plot, fit, check assumptions with Bayes}
+
+# load mole rats data
+mole_rats <- read.csv("./raw_data/18e4MoleRatLayabouts.csv")
+
+# view data
+head(mole_rats)
+
+# plot
+ggplot(mole_rats, aes(x= lnmass, y = lnenergy, fill = caste)) +
+  geom_boxplot()
+
+
+# fit Bayes model and summarize
+mole_banova <- brm(lnenergy ~ lnmass+caste,
+                   data = mole_rats,
+                   chains = 3,
+                   family=gaussian())
+
+# compare means
+mole_banova_em <- emmeans(mole_banova, ~lnmass+caste)
+#view means
+mole_banova_em
+
+
+# Banova and variance partitioning
+# emmeans helps us out here again as it provides ready access to the caste levels
+sd_caste <- gather_emmeans_draws(mole_banova_em) %>%
+  group_by(.draw) %>%
+  summarize(sd_caste = sd(.value))
+
+# To get the sd of residuals for each draw of the coefficients
+sd_residuals <- residuals(mole_banova, summary=FALSE) %>%
+  t() %>%
+  as.data.frame() %>%
+  summarise_all(sd) %>%
+  as.numeric
+
+# group sd for each caste  
+sd_groups <- tibble(type = c(rep("caste", 3000),
+                             rep("residual", 3000)),
+                    value = c(sd_caste$sd_caste, sd_residuals))
+
+# plot
+ggplot(sd_groups, 
+       aes(x = value, y = type)) +
+  geom_halfeyeh()
+
+# make a tibble of posteriors
+sd_bycol <- tibble(caste_sd = sd_caste$sd_caste,
+                   residuals_sd = sd_residuals)
+
+
+tidyMCMC(sd_bycol, conf.int = TRUE, conf.method = "HPDinterval")
+
+
+#  get % of variance by transforming sd_bycol to percentages
+sd_percent_bycol <- sd_bycol/rowSums(sd_bycol) * 100
+
+tidyMCMC(sd_percent_bycol, estimate.method = "median",
+         conf.int = TRUE, conf.method = "HPDinterval")
+
+
+```
+
+
+**3.2** Examine whether there is an interaction or not using LOO cross-validation. Is a model with an interaction more predictive?
+
+```{r LOO CV}
+
+# Factorial Anova
+
+# Using boot::cv.glm() for LOO or k-fold ####
+# validate model with interaction
+loo1 <- loo(mole_banova, save_psis = TRUE, cores = 2)
+
+# validate model without interaction
+mole_banova2 <- brm(lnmass ~ lnenergy, data = mole_rats,
+                 family = gaussian(link = "identity"))
+
+loo2 <- loo(mole_banova2, save_psis = TRUE, cores = 2)
+
+# comparison
+loo_compare(loo1, loo2)
+
+```
+The model with an interaction is more predictive as it has a lower standard error (0) when compared to the model without an interaction.
+
+**3.3** Compare the two castes energy expenditure at the mean level of log mass. Are they different? How would you discuss your conclusions.
+
+```{r compare the two castes at mean level of log mass}
+
+# posthocs
+# compare the two castes at mean level of log mass
+contrast(mole_banova_em, method = "dunnett")
+
+# p-value correction
+contrast(mole_banova_em,
+        method = "tukey", adjust="bonferroni")
+
+
+# We can visualize this using `tidybayes::gather_emmeans_draws`` to see the results of the contrast.
+contrast(mole_banova_em, method = "tukey") %>%
+  gather_emmeans_draws() %>%
+  ggplot(aes(x = .value, y = contrast)) +
+  stat_halfeye() +
+  geom_vline(xintercept = 0, color = "red", lty = 2)
+
+
+# some interesting and useful visualizations of the means themselves with some additional geoms
+gather_emmeans_draws(mole_banova_em) %>%
+  ggplot(aes(x = caste, y = .value)) +
+  stat_lineribbon(alpha = 0.25, fill = "gray25") +
+  stat_pointinterval() 
+
+
+```
+From the mean estimates and contrast plots, it can be inferred that both castes have the same level of energy expenditure.
+
+**3.4** Plot the fit model. Use tidybayes and ggdist with your model to show fit and credible intervals with the raw data points on top. modelr::data.grid() might help as well.
+
+```{r plot the fit model}
+
+# make a grid using modelr::data_grid()
+grid <- mole_rats %>%
+  data_grid(lnmass, caste) %>%
+  mutate(pred = predict(mole_banova, newdata = ., type ='response'))
+
+#show fit and credible intervals with the raw data points on top
+ggplot(mole_rats, aes(lnmass, lnenergy, color = caste)) +
+  geom_point(aes(y = lnenergy - 1)) +
+  geom_line(data = grid, aes(y = pred[1:60])) +
+  scale_y_continuous('lnenergy', breaks = 0:1, labels = levels(mole_rats$lnenergy))
+
+```

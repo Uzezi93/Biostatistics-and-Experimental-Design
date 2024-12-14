@@ -1,0 +1,84 @@
+---
+author: "Uzezi Okinedo"
+date: "9/11/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### <span style="color: red;"> Good! however, make sure to comment out your code with a # and some comment for each thing that you are doing next time.  A point will be taken off in the future for each response that doesn't have code commented out. It's good practice to both show me what you did, and that you fully understand the concepts.  For yourself, it's good practice to comment your code so you know what you did if you come back to your code years down the road! Also, don't just write the code, answer the question!  Specific questions are asked, such as "What unique stations are there?".  You do the code, but you don't answer the question.  It may seem redundant, but it shows us that you are able to interpret the code, not just code it out! Points will be taken off in the future for incomplete answers, Grade: 15/15 points + 3 EC Points + 1 Point for Github = 19/15 points </span>
+
+**1. Load quake data**
+
+```{r quakes}
+data ("quakes")
+```
+
+**Structure and Summary of quakes**
+
+```{r quakes structure and summary}
+str (quakes)
+summary (quakes)
+```
+
+### <span style="color: red;"> Good, you'll just want to comment your code with a # in the future, 3/3 points </span>
+
+**2. To show entirety of the column long**
+
+```{r quakes column long}
+column_long <- quakes$long
+column_long
+```
+
+### <span style="color: red;"> Good, same as above, 3/3 points </span>
+
+**3. To see all unique values by creating a vector**
+
+```{r quakes unique values}
+magnitudes <- quakes [, 5]
+unique_mag <- unique(magnitudes)
+unique_mag
+```
+
+### <span style="color: red;"> Good, same as above, 3/3 points </span>
+
+**All unique stations**
+
+```{r quakes stations}
+unique_stations <- unique(quakes$stations)
+all_unique_stations <- length(unique_stations)
+all_unique_stations
+```
+
+### <span style="color: red;"> Good, in the future, make sure when there is a direct question, you answer it. For example, "There are 102 unique stations." 3/3 points </span>
+
+**4. Range of depths where quakes occur**
+
+```{r quakes depth range}
+depth_range <- range(quakes$depth)
+```
+
+### <span style="color: red;"> Good, same as above, 3/3 points </span>
+
+**Where earthquake of the largest magnitude is found**
+
+
+```{r quake largest magnitude locations}
+max_magnitude <- max(quakes$mag)
+max_mag_data <- quakes[quakes$mag == max_magnitude, ]
+max_mag_station <- max_mag_data [, "stations"]
+max_mag_station
+```
+
+### <span style="color: red;"> Good, same as above, 3/3 points </span>
+
+[GitHub Extra Credit](https://github.com/Uzezi93/BIOL-607-Homework-Fall-2020-/blob/master/01_OKINEDO_UZEZI_2020.md) 
+
+
+
+
+

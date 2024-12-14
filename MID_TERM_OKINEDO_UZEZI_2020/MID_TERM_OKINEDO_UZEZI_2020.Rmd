@@ -1,0 +1,736 @@
+---
+title: "Midterm Exam"
+author: "Uzezi Okinedo"
+date: "11/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+
+# load in libraries
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(broom)
+library(MASS)
+library(profileModel)
+library(brms)
+library(bayesplot)
+library(MASS)
+library(bbmle)
+library(ggdist)
+library(tidybayes)
+library(purrr)
+library(rsample)
+library(boot)
+library(modelr)
+library(tidyverse)
+library(rlang)
+library(gganimate)
+library(animation)
+
+
+
+```
+
+Welcome to your mid-term! I hope you enjoy. Note, in all of the questions below, there are easy not so code intensive ways of doing it, and there are longer more involved, yet still workable ways to answer them. I would suggest that before you dive into analyses, you do the following.
+
+First, breathe.
+
+Second, think about the steps you need to execute to get answer the question. Write them down.
+
+Third, for those parts of problems that require code, put those steps, in sequence, in comments in your script file. Use those as signposts to step-by-step walk through the things you need to do.
+
+Fourth, go over these steps, and see if there are any that could be easily abstracted into functions, could be vectorized, or otherwise done so that you can expend the minimum amount of effort on the problem to get the correct answer.
+
+You will be graded on
+1. Correct answers
+2. Showing how you arrived at that answer
+3. Well formatted and documented code
+4. Thoughtful answers
+
+
+The exam will be due on Nov 13th, 5pm.
+
+**1) Sampling your system (10 points)**
+
+Each of you has a study system your work in and a question of interest. Give an example of one variable that you would sample in order to get a sense of its variation in nature. Describe, in detail, how you would sample for the population of that variable in order to understand its distribution. Questions to consider include, but are not limited to: Just what is your sample versus your population? What would your sampling design be? Why would you design it that particular way? What are potential confounding influences of both sampling technique and sample design that you need to be careful to avoid? What statistical distribution might the variable take, and why?
+
+**Answer**
+
+So my study system is quite complex and I will probably drift away from familiar territory a bit. Unlike other systems that might require a phenotype first approach, mine will involved sampling of genotype data in order to predict phenotype. I am currently organizing my research to understand the genetic diversity in African rice species - _O.glaberrima_ with respect to identifying signatures of positive selection and adaptation. My samples for this study will include nuclear genomes of _O. glaberrima_ accessions derived from natural populations grown in Niger-Benin lowlands in Western Africa. 
+
+Most cultivated rice species have complex population structures due to self-pollination giving rise to multiple sub-populations, posing quite a challenge in selecting sampling procedures. Since my study variable relies solely on population genetic data, sample selection must be compatible for a GWAS analysis panel. Most GWAS panels requires samples with high levels of genetic diversity and low population structure as this will allow more precise identification of loci associated with phenotypic trait and also reduce false positives. Therefore, strategic sampling methods must be followed in selecting varieties with the characteristics required for GWAS analysis. 
+
+Rice accessions have fixed or rare alleles in their sub-populations making them unreliable candidates for GWAS analysis even with the utilization of large sample sizes. For this reason, methods involving the construction of recombinant populations have been developed to tackle this problem, one of which is the Multi-parent Advanced Generation Inter-cross (MAGIC) populations. This population is formed through multiple inter-crosses among diverse, followed by several generations of selfing by single-seed descent (SSD) - a method of having a single seed from each plant. 
+
+With my ideal population in place, I still need a suitable sample size and an appropriate sampling method to identify the most genetically diverse accessions for my study. For most population genetic studies, sample size (n), close to population size (N) can be quite problematic when it comes to sequence interpretation and statistical power. Therefore, I'll be sampling between 10 -30% of the most genetically diverse accessions in the MAGIC population.
+
+I will be employing a sampling method called the D-Method(DM). This is a three stage method that includes; 
+
+i) A classification clustering
+
+ii) Selecting fractions of accessions which are defined proportionally to cluster diversity. The cluster diversity is measured by the group's Modified Rogers' distance (mrd) values, a key evaluation metric for determining genetic distances between accessions in each cluster.
+
+iii) Selection of the most diverse sample out of all candidate samples generated by **stratified random sampling process**.
+
+For my sampling statistical distribution, I believe normality is the standard for every test statistics. Although my sampling distribution might not follow normality due to large data points, the central limit theorem (CLT) can still be applied which allows sums or averages to approximately follow a normal distribution even if non-normal. 
+
+
+**2) Data Reshaping and visualization**
+
+Johns Hopkins has been maintaining one of the best Covid-19 timseries data sets out there. The data on the US can be found here with information about what is in the data at https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
+
+**2a) Access (5 points)**
+
+Download and read in the data. Can you do this without downloading, but read directly from the archive (+1).
+
+```{r download and read in data}
+
+# download and read data directly from archive
+covid <- readr::read_csv('https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv')
+
+# view the head of the data
+head(covid)
+
+
+```
+
+**2b) It’s big and wide! (10 Points)**
+
+The data is, well, huge. It’s also wide, with dates as columns. Write a function that, given a state, will output a time series (long data where every row is a day) of cumulative cases in that state as well as new daily cases.
+
+Note, let’s make the date column that emerges a true date object. Let’s say you’ve called it date_col. If you mutate it, mutate(date_col = lubridate::mdy(date_col)), it will be turned into a date object that will have a recognized order. {lubridate} is da bomb, and I’m hoping we have some time to cover it in the future.
+
++5 extra credit for merging it with some other data source to also return cases per 100,000 people.
+
+```{r write a function to give time series}
+
+# a function that given a state will output a time series
+time_Series_fun <- function(us_state, ...){
+# using the rlang::enexprs(...) function to capture multiple arguments in my function
+  args <- rlang::enexprs(...)
+
+# subset Province_state and all date columns in Covid dataset    
+state_date <- covid[, c(7, 12:ncol(covid))]
+
+# create a new dataframe containing all Province_states and a column for daily and cummulative cases
+  us_state <- state_date %>%
+    # change to long data
+    pivot_longer(cols = -Province_State,
+               names_to = "Date_col",
+               values_to = "New_cases") %>%
+    filter(Province_State == args) %>%
+    # make a true date column using lubridates
+    mutate(Dates = mdy(Date_col), Cummulative_cases = cumsum(New_cases))
+  
+  # return output
+  return(us_state)
+}
+
+# test function
+time_Series_fun(us_states, Massachusetts)
+```
+
+
+**2c) Let’s get visual! (10 Points)**
+
+Great! Make a compelling plot of the timeseries for Massachusetts! Points for style, class, ease of understanding major trends, etc. Note, 10/10 only for the most killer figures. Don’t phone it in! Also, note what the data from JHU is. Do you want the cumulative, or daily, or what?
+
+```{r a compelling plot}
+
+# use function created in 2b to filter cumulative cases for Massachusetts
+mass_time_series <- time_Series_fun(us_states, Massachusetts)
+# create a plot object
+plot <- mass_time_series %>%
+  summarise(Dates, New_cases) %>%
+  ggplot(aes(Dates), color = "blue") +
+  # use stat_count to show cummulative increase in plot
+  stat_count(aes(y=cumsum(..count..)),geom="step",bins=30) +
+  # add some gganimate features 
+  transition_manual(Dates) +
+  view_follow() +
+  transition_reveal(Dates) +
+  ease_aes()+
+  labs(title = "Cummulative COVID-19 Plot",
+           y = "Cummulative cases",
+           x = "Dates") 
+
+# animate plot 
+animate(plot, fps = 5)
+
+```
+
+**2c) At our fingertips (10 Points)**
+
+Cool. Now, write a function that will take what you did above, and create a plot for any state - so, I enter Alaska and I get the plot for Alaska! +2 if it can do daily or cumulative cases - or cases per 100,000 if you did that above. +3 EC if you highlight points of interest - but dynamically using the data. Note, you might need to do some funky stuff to make things fit well in the plot for this one. Or, meh.
+
+```{r create a function to plot cummulative cases for any state}
+
+# create a function for ploting state cummulatives
+state_cumm_fun <- function(us_state, ...) {
+
+# using the rlang::enexprs(...) function to capture multiple arguments in my function    
+args <- rlang::enexprs(...)
+
+# use previous time series function to subset state of interest
+Dataset <- time_Series_fun(us_state, ...)
+
+# create a plot object for function output
+  plot <- Dataset %>%
+  ggplot(aes(Dates), color = "blue") +
+  stat_count(aes(y=cumsum(..count..)),geom="step",bins=30) +
+  # add animation parameters
+  transition_manual(Dates) +
+  view_follow() +
+  transition_reveal(Dates) +
+  ease_aes() +
+  labs(title = "Cummulative COVID-19 Plot",
+           y = "Cummulative cases",
+           x = "Dates") 
+
+# animate final plot to show trend of cummulative increase
+animate(plot, fps = 5)
+
+  
+ 
+}
+
+# test function
+state_cumm_fun(plot, Arizona)
+
+```
+
+**2d Extra Credit) Go wild on data viz (5 Points each)**
+
+Use what you’ve done - or even new things (data sets, etc) so make compelling informative world-shaking visualizations that compare between states. Feel free to bring in outside information, aggregate things, or do whatever you would like. +5 per awesome viz (and Michael will be grading hard - if you don’t knock his socks off, it might only be +1) and +3 if you accompany it with a function that lets us play around and make new viz.
+
+```{r plots comparing between states}
+
+# Making cumulative visualizations for 5 neighboring states
+Dataset <- time_Series_fun(us_state, Massachusetts, "New York", Connecticut, Vermont, "Rhode Island", Delaware)
+
+# subset dataset and select states of interest
+plot <- ggplot(Dataset,aes(x=Dates,color=Province_State)) +
+  stat_bin(data=subset(Dataset,Province_State=="Massachusetts"),aes(y=cumsum(..count..)),geom="step")+
+  stat_bin(data=subset(Dataset,Province_State=="New York"),aes(y=cumsum(..count..)),geom="step")+
+  stat_bin(data=subset(Dataset,Province_State=="Connecticut"),aes(y=cumsum(..count..)),geom="step")+
+  stat_bin(data=subset(Dataset,Province_State=="Vermont"),aes(y=cumsum(..count..)),geom="step")+
+  stat_bin(data=subset(Dataset,Province_State=="Rhode Island"),aes(y=cumsum(..count..)),geom="step") +
+  stat_bin(data=subset(Dataset,Province_State=="Delaware"),aes(y=cumsum(..count..)),geom="step")
+  
+# view plot
+plot
+
+# use facet_wrap to view individual plot for each state
+facet_wrap <- plot + 
+  facet_wrap( ~ Province_State ) +
+  labs(title = "Cummulative COVID-19 Plot",
+           y = "Cummulative cases",
+           x = "Dates") +
+  theme_bw(base_size = 15) 
+
+# view facet wrap
+facet_wrap
+
+
+```
+
+
+
+**3) Let’s get philosophical. (10 points)**
+
+We have discussed multiple inferential frameworks this semester. Frequentist NHST, Likelihood and model comparison, Bayesian probabilistic thinking, Assessment of Predictive Ability (which spans frameworks!), and more. We’ve talked about Popper and Lakatos. Put these pieces of the puzzle together and look deep within yourself.
+
+What do you feel is the inferential framework that you adopt as a scientist? Why? Include in your answer why you prefer the inferential tools (e.g. confidence intervals, test statistics, out-of-sample prediction, posterior probabilities, etc.) of your chosen worldview and why you do not like the ones of the other one. This includes defining just what those different tools mean, as well as relating them to the things you study. extra credit for citing and discussing outside sources - one point per source/point.
+
+As a scientist, I feel I am more inclined to adopt the inductive inferential framework because I easily gravitate towards making conclusions from patterns before assuming any form of hypothesis. I therefore view Inductive reasoning as a realistic form of thinking that mimics real life scenarios where conclusions can be drawn based on arguments and premise evaluations, rather than from one singular observation. 
+
+"A given fact is explained scientifically only if a new fact is predicted with it....The idea of growth and the concept of empirical character are soldered into one." (Imre Lakotos, 1978 - _The Methodology of Scientific Research Programmes_).  With an inductive inferential framework, the growth of a scientific theorem assumes many sources where generalizations can be made through patterns of observations. 
+
+Most population genetics research have followed the inductive inferential framework. Advances in technology platforms are engendering an inimitable increase of big data coupled with accelerated increase in both the size and complexity of datasets (Lowe _et al._ 2017). This has led to the development and testing of statistical  approaches for modeling phenotypic data that can effectively identify variation at both inter and intra- specific scales. 
+
+Normality, which is a fundamental assumption in statistical testing, has proven to be quite valuable due to its power to accommodate a wide range of statistical methods. Nevertheless, this assumption can only be reasonable when a distribution or data is continuous. However, with the central limit theorem (CLT), non-normal data can follow a normal distribution by calculating the averages or sum of data points. This theorem creates validity that allows the implementation of familiar and uncomplicated statistical tools like the t test, ANOVA, and linear regression modeling. Despite the ease showcased by the CLT, alternative distributions will always exist in population genetic studies that might not be compatible with this approach (Mar, 2019). 
+
+Most quantitative genetics and breeding experiments have utilized mainly  restricted maximum likelihood (REML) and Bayesian methods. REML has emerged as an important method in plant breeding for analyzing agronomic performance through variance component estimation. More flexible approaches like Bayesian analysis are gradually replacing most classical statistical testing due to its comprehensive assumptions in solving a host of biological problems (Zaabza _et al._ 2017) 
+
+Bayesian statistics works on the idea of combining existing or previous statistics obtained before data observation (prior probability), with information derived from data observation to get a posterior distribution in order to make inferences using fundamental probability techniques. Recent plant breeding and population genetics experiments have utilized Bayesian methods like Markov chain Monte Carlo (MCMC) for estimating genetic parameters in the linear mixed effect model. This has led to a significant reduction in unjustified inferences drawn from other interval estimates like Confidence Intervals (CIs) which do not always identify the precision of an estimate. Casella (1992) strongly established that a procedure in which its Bayesian properties have not been explored should not be considered for any post-data inference (Morey _et al._ 2016)
+
+**Reference**
+
+Lakatos, I. (1978). _The Methodology of Scientific Research Programmes: Philosophical Papers Volume 1_. Cambridge: Cambridge University Press
+
+Lowe, R. _et al_ (2017). Transcriptomics technologies. _PLoS Compututational Biology Biology_ **13**(5):e1005457.
+
+Mar, J.c. (2019). The rise of the distributions: why non-normality is importantfor understanding the transcriptome and beyond. _Biophysical Reviews_ 11:89–94 [https://doi.org/10.1007/s12551-018-0494-4]
+
+Zaabza, H.B., Gara, A.B. and Rekik, B. (2017). Bayesian Modeling in Genetics and Genomics. [http://dx.doi.org/10.5772/intechopen.70167]
+
+Casella, G. (1992). _Conditional inference from confidence sets_. Lecture Notes-Monograph Series, 17, 1–12.
+
+Morey, R.D·, Hoekstra, R., Rouder, J.N., Lee, M.D. and Wagenmakers, E. (2016). The fallacy of placing confidence in confidence intervals. _Psychonomic Bulletin and Review_ **23**:103–123
+ 
+
+***4) Bayes Theorem (10 points)**
+
+I’ve referenced the following figure a few times. I’d like you to demonstrate your understanding of Bayes Theorem by hand (e.g. calculate it out and show your work - you can do this all in R, I’m not a monster) showing what is the probability of the sun exploding is given that the device said yes. Assume that your prior probability that the sun explodes is p(Sun Explodes) = 0.0001 (I’ll leave it to you to get p(Sun Doesn’t Explode). The rest of the information you need - and some you don’t - is in the cartoon - p(Yes | Explodes), p(Yes | Doesn’t Explode), p(No | Explodes), p(No | Doesn’t Explode).
+
+```{r calculate probability of the sun exploding}
+
+#Bayes theorem allows the use of existing knowledge or belief (called prior) to calculate the probability of a related event. The mathematical notation of Bayes theorem can be given as p(A/B) = p(B/A)p(A)/p(B). 
+
+#where A and B are events, P(A|B) is the conditional probability that event A occurs given that event B has already occurred. This is also known as the posterior probability.
+
+#(P(B|A) has the same meaning but with the roles of A and B reversed
+
+#P(A) and P(B) are the marginal probabilities of event A and event B occurring respectively.
+
+
+#p(Yes | Explodes), p(Yes | Doesn’t Explode), p(No | Explodes), p(No | Doesn’t Explode).
+# For this question, the marginal probabilities are p(Sun Explodes) and p(Yes) which equates to p(A) and p(B) respectively.
+
+# While our likelihood is given as p(B/A) which is either p(Yes | Doesn’t Explode) or p(No | Explodes).
+
+#p(Sun Explodes) = p(A) = 0.0001
+#p(Yes) = p(B) = 0.027
+#p(Yes | Doesn’t Explode) = p(B/A) = (0.027 * 0.0001) + (1 - 0.027) * (1- 0.0001) = 0.0973
+#p(Yes | Explodes) = p(A/B)
+
+#Bayes theorem;
+
+#p(A/B) = p(B/A)p(A)/p(B)
+
+(0.0973) * (0.0001)/0.027
+
+```
+probability of the sun exploding given that the device said yes is **0.0003603704**
+
+**4a Extra Credit (10 Points)**
+
+Why is this a bad parody of frequentist statistics?
+
+**5) Quailing at the Prospect of Linear Models**
+
+I’d like us to walk through the three different ‘engines’ that we have learned about to fit linear models. To motivate this, we’ll look at Burness _et al_.’s 2012 study "Post-hatch heat warms adult beaks: irreversible physiological plasticity in Japanese quail http://rspb.royalsocietypublishing.org/content/280/1767/20131436.short the data for which they have made available at Data Dryad at http://datadryad.org/resource/doi:10.5061/dryad.gs661. We’ll be looking at the morphology data.
+
+**5a) Three fits (10 points)**
+
+To begin with, I’d like you to fit the relationship that describes how Tarsus (leg) length predicts upper beak (Culmen) length. Fit this relationship using least squares, likelihood, and Bayesian techniques. For each fit, demonstrate that the necessary assumptions have been met. Note, functions used to fit with likelihood and Bayes may or may not behave well when fed NAs. So look out for those errors.
+
+```{r least square regression}
+
+# read in morph data
+morph <- read.csv("./raw_data/Morphology data.csv") %>%
+  # remove NAs
+  na.omit()
+
+# view morph data
+head(morph)
+
+# fit the relationship that describes how Tarsus (leg) length predicts upper beak (Culmen) length
+
+# fit relationship using least squares regression
+
+#initial visualization to determine if lm is appropriate
+morph_plot <- ggplot(data = morph, aes(x = Tarsus..mm., y = Culmen..mm.)) +
+  geom_point()
+morph_plot
+
+morph_mod <- lm(Culmen..mm. ~ Tarsus..mm., data = morph)
+
+#assumptions
+simulate(morph_mod, nsim = 100) %>%
+  pivot_longer(cols = everything(),
+               names_to = "sim", values_to = "Culmen..mm.") %>%
+  ggplot(aes(x = Culmen..mm.)) +
+  geom_density(aes(group = sim), size = 0.2) +
+  geom_density(data = morph, color = "blue", size = 2)
+
+plot(morph_mod, which = 1)
+plot(morph_mod, which = 2)
+
+#f-tests of model
+anova(morph_mod) %>%
+tidy()
+
+#t-tests of parameters
+tidy(morph_mod)
+
+#plot with line
+morph_plot +
+  stat_smooth(method = lm, formula = y~x)
+```
+
+```{r regression with likelihood}
+
+# if we want to be 'strict', we'll use glm
+morph_mle <- glm(Culmen..mm. ~ Tarsus..mm., 
+                data = morph,
+                family = gaussian(link = "identity"))
+
+
+# assumptions!
+plot(morph_mle, which = 1)
+plot(morph_mle, which = 2)
+hist(residuals(morph_mle))
+
+# The new thing - make sure our profiles are well behaved!
+library(MASS)
+library(profileModel)
+
+prof <- profileModel(morph_mle,
+                     objective = "ordinaryDeviance")
+
+plot(prof)
+plot(prof, print.grid.points = TRUE)
+
+prof <- profileModel(morph_mle,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 1))
+plot(prof)
+
+#----
+#let's do this with MASS
+# tau is the signed square root of the deviance
+# so, a parabaola should become a straight line
+# if it's not, you have a problem!
+prof_mass <- profile(morph_mle)
+plot(prof_mass)
+
+prof_mass
+confint(prof_mass)
+
+# Model evaluation
+tidy(morph_mle) #dispersion parameter for gaussian = variance
+
+```
+
+
+```{r regression with Bayes}
+
+# Fit the model
+# Assess convergence of chains
+# Evaluate posterior distributions
+# Check for model misspecification (fit v. residual, qq plot)
+# Evaluate simulated residual distributions
+# Evaluate simulated fit versus observed values
+# Compare posterior predictive simulations to observed values
+# Visualize fit and uncertainty
+
+set.seed(607)
+
+morph_lm_bayes <- brm(Culmen..mm. ~ Tarsus..mm.,
+                         data = morph,
+                         family=gaussian())
+
+# Inspect chains and posteriors
+plot(morph_lm_bayes)
+
+#Inspect rhat
+rhat(morph_lm_bayes)
+mcmc_rhat(rhat(morph_lm_bayes))
+
+#Inspect Autocorrelation
+mcmc_acf(as.data.frame(morph_lm_bayes))
+
+
+#model assumptions
+# did we miss normality?
+morph_fit <- predict(morph_lm_bayes) %>% as_tibble
+morph_res <- residuals(morph_lm_bayes)%>% as_tibble
+
+qplot(morph_res$Estimate, morph_fit$Estimate)
+
+#fit
+pp_check(morph_lm_bayes, "dens_overlay")
+
+#normality
+qqnorm(morph_res$Estimate)
+qqline(morph_res$Estimate)
+pp_check(morph_lm_bayes, type="error_hist", bins=8)
+pp_check(morph_lm_bayes, "error_scatter_avg")
+
+##match to posterior
+pp_check(morph_lm_bayes, type="stat_2d", test=c("mean", "sd"))
+pp_check(morph_lm_bayes)
+
+#coefficients
+summary(morph_lm_bayes, digits=5)
+
+#confidence intervals
+posterior_interval(morph_lm_bayes)
+
+#visualize
+morph_chains <- as.data.frame(morph_lm_bayes)
+
+# Visualize our posteriors ####
+#library(tidybayes) #extractions and tidying
+#library(ggdist) #visualization
+morph_plot +
+  geom_abline(intercept=morph_chains[,1], slope = morph_chains[,2], alpha=0.1, color="lightgrey") 
+```
+
+
+**5b) Three interpretations (10 points)**
+
+OK, now that we have fits, take a look! Do the coefficients and their associated measures of error in their estimation match? How would we interpret the results from these different analyses differently? Or would we? Note, confint works on lm objects as well.
+
+```{r do errors match?}
+
+# fit a glm model to test with confint
+morph_glm <- glm(Culmen..mm. ~ Tarsus..mm.,
+                 data = morph,
+                 family = gaussian(link = "identity"))
+
+# profile the glm and likelihood model 
+prof_mass_glm <- profile(morph_glm)
+prof_mass_mle <- profile(morph_mle)
+
+# check co-efficients at different confidence intervals for all models
+confint(prof_mass_glm)
+confint(prof_mass_mle)
+# use posterior interval to check coefficients for bayes lm
+posterior_interval(morph_lm_bayes)
+```
+The coefficient estimates and associated errors for the linear and likelihood models are the same at both confidence intervals while the estimate for the bayes model is slightly higher. The bayes coefficient estimates would slightly differ because it is based on probabilistic inferences.
+
+**5c) Everyday I’m Profilin’ (10 points)**
+
+For your likelihood fit, are your profiles well behaved? For just the slope, use grid sampling to create a profile. You’ll need to write functions for this, sampling the whole grid of slope and intercept, and then take out the relevant slices as we have done before. Use the results from the fit above to provide the reasonable bounds of what you should be profiling over (3SE should do). Is it well behaved? Plot the profile and give the 80% and 95% CI (remember how we use the chisq here!). Verify your results with profileModel.
+
+```{r likelihood profiling}
+
+# slope(b0) = 0.3859520
+# intercept(b1) = 0.3235663
+# SD(sigma) = 1.238383
+
+#create a Negative log likelihood function using grid sampling to create a profile for slope and intercept
+Neg_log_lik <- function(slope = seq(0.1, 0.4, by = 0.1), 
+                    int = seq(0.1, 0.4, by = 0.1), 
+                    resid_sd = seq(0.9, 1.3, by = 0.1)){
+#in case of non-possible SD value, NaN
+if(resid_sd <= 0) return(NaN)
+#fitted values as means
+morph_fit <- slope * morph$Tarsus..mm. + int
+-sum(dnorm(morph$Culmen..mm., mean = morph_fit, sd = resid_sd, log=T))
+}
+
+# 95% CI - that the points that are 1.92 away from the MLE's loglik
+# remember, we want the quantile of the chisq divided by 2 so we
+# get both tails
+
+# calculate maximum likelihood using the mle2 function 
+morph_mle2 <- mle2(Neg_log_lik, start=list(slope=0.1, int=0.1, resid_sd=0.9))
+
+# plot the profile of the calculated mle over three standard errors
+prof <- profile(morph_mle2,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 80),
+                     stdErrors = 3)
+
+
+# view plot
+plot(prof)
+
+
+```
+
+These profiles are well behaved. The convergence on each plot corresponds the calculated estimates in the mle model.
+
+**5d) The Power of the Prior (10 points)**
+
+This data set is pretty big. After excluding NAs in the variables we’re interested in, it’s over 766 lines of data! Now, a lot of data can overwhelm a strong prior. But only to a point. Show first that there is enough data here that a prior for the slope with an estimate of 0.7 and a sd of 0.01 is overwhelmed and produces similar results to the default prior. How different are the results from the original?
+
+Second, randomly sample 10, 100, 300, and 500 data points. At which level is our prior overwhelmed (e.g., the prior slope becomes highly unlikely)? Communicate that visually in the best way you feel gets the point across, and explain your reasoning.
+ 
++4 for a function that means you don’t have to copy and paste the model over and over. + 4 more if you use map() in combination with a tibble to make this as code-efficient as possible. This will also make visualization easier.
+
+```{r the power of the prior}
+
+# show an estimate of 0.7 and a sd of 0.01 is overwhelmed and produces similar results to the default prior
+Neg_log_lik <- function(slope, int, resid_sd){
+#in case of non-possible SD value, NaN
+if(resid_sd <= 0) return(NaN)
+#fitted values as means
+morph_fit <- slope * morph$Tarsus..mm. + int
+-sum(dnorm(morph$Culmen..mm., mean = morph_fit, sd = resid_sd, log=T))
+}
+
+morph_mle <- mle2(Neg_log_lik, start=list(slope=0.7, resid_sd=0.01, int=0.2))
+
+prof <- profile(morph_mle,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 80),
+                     stdErrors = 3)
+plot(prof)
+
+# create objects for each datapoints to sample
+a <- morph$Tarsus..mm.[1:10]
+b <- morph$Culmen..mm.[1:10]
+
+c <- morph$Tarsus..mm.[1:100]
+d <- morph$Culmen..mm.[1:100]
+
+e <- morph$Tarsus..mm.[1:300]
+f <- morph$Culmen..mm.[1:300]
+
+g <- morph$Tarsus..mm.[1:500]
+h <- morph$Culmen..mm.[1:500]
+
+# create negative log functions using each data point 
+# I created four functions. I couldn't find my around making my functions code efficient.
+# I made 4 Negative log functions for each data point
+Neg_log_lik_1 <- function(slope, int, resid_sd){
+#in case of non-possible SD value, NaN
+if(resid_sd <= 0) return(NaN)
+#fitted values as means
+morph_fit <- slope * a + int
+-sum(dnorm(b, mean = morph_fit, sd = resid_sd, log=T))
+}
+
+Neg_log_lik_2 <- function(slope, int, resid_sd){
+#in case of non-possible SD value, NaN
+if(resid_sd <= 0) return(NaN)
+#fitted values as means
+morph_fit <- slope * c + int
+-sum(dnorm(d, mean = morph_fit, sd = resid_sd, log=T))
+}
+
+Neg_log_lik_3 <- function(slope, int, resid_sd) {
+#in case of non-possible SD value, NaN
+if(resid_sd <= 0) return(NaN)
+#fitted values as means
+morph_fit <- slope * e + int
+-sum(dnorm(f, mean = morph_fit, sd = resid_sd, log=T))
+}
+
+Neg_log_lik_4 <- function(slope, int, resid_sd){
+#in case of non-possible SD value, NaN
+if(resid_sd <= 0) return(NaN)
+#fitted values as means
+morph_fit <- slope * g + int
+-sum(dnorm(h, mean = morph_fit, sd = resid_sd, log=T))
+}
+
+# I used mle2 function and profiling to plot the slope and residual sd of each data point 
+morph_mle1 <- mle2(Neg_log_lik_1, start=list(slope=0.7, resid_sd=0.01), fixed = list(int=0.2))
+
+prof_1 <- profile(morph_mle1,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 80),
+                     stdErrors = 3)
+plot(prof_1)
+
+morph_mle2 <- mle2(Neg_log_lik_2, start=list(slope=0.7, resid_sd=0.01), fixed = list(int=0.2))
+
+prof_2 <- profile(morph_mle2,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 80),
+                     stdErrors = 3)
+plot(prof_2)
+
+
+morph_mle3 <- mle2(Neg_log_lik_3, start=list(slope=0.7, resid_sd=0.01), fixed = list(int=0.2))
+
+prof_3 <- profile(morph_mle3,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 80),
+                     stdErrors = 3)
+plot(prof_3)
+
+
+morph_mle4 <- mle2(Neg_log_lik_4, start=list(slope=0.7, resid_sd=0.01), fixed = list(int=0.2))
+
+prof_4 <- profile(morph_mle4,
+                     objective = "ordinaryDeviance",
+                     quantile = qchisq(0.95, 80),
+                     stdErrors = 3)
+plot(prof_4)
+
+```
+A slope estimate of 0.7 and sd of 0.01 produces the same results as the prior.
+
+Secondly, the slope becomes less unlikely as data points increase. At smaller data points, the residual sd is close to zero which means that the slope estimate is close to the true value.
+
+
+**6) Cross-Validation and Priors (15 points)**
+
+There is some interesting curvature in the culmen-tarsus relationship. Is the relationship really linear? Squared? Cubic? Exponential? Use one of the cross-validation techniques we explored to show which model is more predictive. Justify your choice of technique. Do you get a clear answer? What does it say?
+
+```{r cross validation}
+
+# 5-Fold Cross-Validation
+
+# make a folded data set object using tidyr::crossing()
+tarsus <- morph$Tarsus..mm.
+culmen <- morph$Culmen..mm.
+morph_data <- data.frame(tarsus, culmen)
+morph_five_fold <- vfold_cv(morph_data, v = 5)
+
+# Fit a model to each fold
+# start with our tibble
+set.seed(2020)
+morph_five_fold <- morph_five_fold %>%
+# start with our tibble
+ mutate(linear_mod = map(splits,
+                         # fit a linear model
+                          ~lm(morph$Culmen..mm. ~ morph$Tarsus..mm.,
+                              data = analysis(.x))),
+         
+         #create a new column
+         #using map to iterate over all splits
+         sqrd_mod = map(splits,
+                       #fit a square model
+                       ~lm(morph$Culmen..mm.~ poly(morph$Tarsus..mm., 2),
+                           #fit that model on the training
+                           #data from each split
+                           data = analysis(.x))),
+        cubic_mod = map(splits,
+                       #fit a cubic
+                       ~lm(morph$Culmen..mm.~ poly(morph$Tarsus..mm., 3),
+                           #fit that model on the training
+                           #data from each split
+                           data = analysis(.x))),
+        exp_mod = map(splits,
+                       #fit an exponential model
+                       ~lm(log(morph$Culmen..mm.)~ morph$Tarsus..mm.,
+                           #fit that model on the training
+                           #data from each split
+                           data = analysis(.x))))
+
+# view data
+morph_five_fold
+
+# Get the RMSE of each model and each model TYPE
+# for each LOO split
+
+# start with a tibble
+morph_five_fold_rmse <- morph_five_fold %>%
+  # pivot to put ALL models in one column
+  pivot_longer(cols = c(linear_mod, sqrd_mod, cubic_mod, exp_mod),
+               names_to = "model_name",
+               values_to = "fit_model") %>%
+  
+  # get our rmse just like before with map2!
+  mutate(rmse = map2_dbl(.x = splits, .y = fit_model, # what 
+                     ~rmse(data = assessment(.x),
+                           mod = .y)))
+
+# the answer
+morph_five_fold_rmse  %>%
+  group_by(model_name) %>%
+  summarise(rmse = mean(rmse))
+
+ggplot(data = morph_five_fold_rmse,
+       mapping = aes(x = id, y = rmse, color = model_name)) +
+  geom_point() +
+  scale_x_discrete(labels = NULL)
+
+```
+
+The exponential model is more predictive because it has the lowest rmse value compared to the other models. I used the k-fold cross-validation because of the size of the data. Using the alternative loo cross-validation will be computational intensive for large datasets.

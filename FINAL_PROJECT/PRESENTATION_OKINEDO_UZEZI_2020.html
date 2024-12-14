@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Assessing variability and association of rice agronomic traits across subpopulations and regions</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Uzezi Okinedo" />
+    <meta name="date" content="2020-12-18" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+    <script src="libs/kePrint/kePrint.js"></script>
+    <link href="libs/lightable/lightable.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Assessing variability and association of rice agronomic traits across subpopulations and regions
+### Uzezi Okinedo
+### 12/18/2020
+
+---
+
+
+![paddy field](https://www.edenproject.com/sites/default/files/styles/ep_main_image/public/image-carousel/oryza-sativa-mayano-fruit.JPG?itok=JAs1x7wB)
+
+
+
+---
+
+class: inverse, middle, center
+
+# Introduction
+
+---
+
+# Background
+
+- A major staple food for an estimated 66% of people in almost all regions
+
+
+![Oryza sativa](./raw_data/images.jpg)
+
+
+- Predictions have shown that, 60% more rice will have to be produced by 2030
+
+
+---
+
+# Research problem
+
+
+--
+
+
+- Although test weight and spikelets per unit area may be the popular predictors of yield, it is highly dependent on on other traits or latent factors.
+
+
+--
+
+
+
+- Therefore, it is of relative importance to explore latent factors that might influence test weight across different rice sub-populations and regions in order to improve yield. 
+
+---
+
+# Aim
+
+
+--
+
+
+
+- **i)** To explore trait variation across sub-populations and regions.
+
+
+
+--
+
+
+
+- **ii)**	To examine the extent of association between test weight (100 seed weight) and yield attributing traits across rice sub-populations and geographical regions.
+
+
+
+--
+
+
+
+- **iii)**	Identify direct and latent factors influencing test weight across sub-populations.
+
+---
+
+class: inverse, middle, center
+
+# Materials and Methods
+
+---
+
+# Rice Diversity Panel 1 Dataset
+
+--
+
+
+- RDP1 (Reg. No. MP-6, NSL 500357 MAP) dataset.
+
+
+
+- 421 purified homozygous rice (_Oryza sativa_ L.) accessions (GSOR 301001 through GSOR 301421; GSOR 312001 through 312020) including landraces and elite rice cultivars [Dataset](https://www.ars.usda.gov/ARSUserFiles/60280500/RDP1/RDP1_JPR%20pheno%20and%20marker%20data%20for%20submission%20to%20GSOR-GRIN_v6_R2_08042016.xlsx).
+
+
+--
+
+
+Six sub-population groups namely; Indica (IND),  Aus (AUS), Tropical japonica (TRJ), Temperate japonica (TEJ), Aromatic (ARO), Admixed (ADMIX)
+
+---
+
+# Statistical Analysis
+
+
+--
+
+
+
+- **Standardized major axis (SMA) slopes** for bivariate trait relationships summary and significance test of trait associations 
+
+--
+
+
+- **Structural Equation Model (SEM)** for structural relationship evaluation and estimation of interrelated dependence 
+
+--
+
+
+
+- Linear regression to predict test weight
+
+
+---
+
+class: inverse, middle, center
+
+# Results
+
+---
+
+# Data Exploration 
+
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-1-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-2-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-3-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+---
+
+# SMA Regression across subpopulations
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-4-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+
+```r
+# make a facet-wrap to view relationship across groups
+florets_per_panicle + facet_wrap(~subpopulation, ncol=2)
+```
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/echo FALSE-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# SMA Summary for Total Florets per panicle association across subpopulations
+
+&lt;div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:350px; overflow-x: scroll; width:700px; "&gt;&lt;table class=" lightable-paper" style='font-family: "Arial Narrow", arial, helvetica, sans-serif; margin-left: auto; margin-right: auto;'&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; group &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; n &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; r2 &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; pval &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_lowCI &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_highCI &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Int &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Int_lowCI &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Int_highCI &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_test &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_test_p &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; Elev_test &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Elev_test_p &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; ADMIX &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 56 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1613282 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0021530 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0019881 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.2831417 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7824390 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.4253753 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1263962 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.7243544 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; ARO &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.3560280 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1572758 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -3.3027580 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -7.5404121 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.4466332 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -2.9293795 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -5.4986269 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.3601320 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; AUS &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 51 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0767219 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0490988 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7737894 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0161392 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.5892401 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.8708629 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.1211628 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.6205630 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; IND &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 73 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0280656 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1565744 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.8576659 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0807839 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.6806086 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.5036280 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7507534 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.2565026 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; TEJ &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 92 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0000873 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.9295503 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0138130 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8235053 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.2480998 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8539348 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.5901924 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.1176772 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; TRJ &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 85 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.3162021 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0000000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9617684 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.1509440 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.8036867 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8723962 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.6641858 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0806066 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;
+
+---
+
+# SMA across regions
+
+--
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-6-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Significant associations for Total Florets per panicle across regions
+
+--
+
+&lt;div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:350px; overflow-x: scroll; width:700px; "&gt;&lt;table class=" lightable-paper" style='font-family: "Arial Narrow", arial, helvetica, sans-serif; margin-left: auto; margin-right: auto;'&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; group &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; n &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; r2 &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; pval &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_lowCI &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_highCI &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Int &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Int_lowCI &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Int_highCI &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_test &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Slope_test_p &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; Elev_test &lt;/th&gt;
+   &lt;th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;"&gt; Elev_test_p &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Africa &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 37 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1824934 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0083630 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.2247427 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.6623304 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9023444 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.9025426 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.5346671 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.2704181 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Caribbean &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0058945 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8850630 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.6217080 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.9221328 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.2010896 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.4849523 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.2637442 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.2336489 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Central America &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.5675139 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0837613 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9795673 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -2.2206821 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.4320979 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.7868129 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.2336541 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.3399717 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Central Asia &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.2078680 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.3634980 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9024660 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -2.5495213 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.3194501 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7732753 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.9320294 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.3854787 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; East Asia &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 74 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0000042 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.9862292 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.8872140 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.1198035 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7029346 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.3062358 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.5754577 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.0370139 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; East Europe &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 15 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0024563 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8607635 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7441415 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.3125404 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.4218892 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.2996701 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.4128345 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0121747 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; North America &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 43 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0952134 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0440929 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7525207 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0114193 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.5598938 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.4403637 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1625446 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.7181829 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Oceania &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0381806 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.7106325 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9618998 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -2.9344850 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.3153028 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.3175809 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.5986496 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.9634879 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; South America &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 30 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.2966206 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0018599 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.2485895 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.7181157 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9073753 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.2048406 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.1542327 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.5639140 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; South Asia &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 63 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0774085 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0272509 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7995030 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0199343 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.6267120 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7127386 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.9639363 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.4615409 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Southeast Asia &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 46 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0531385 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1232532 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.7999274 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0706494 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.5976596 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0055228 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.3641482 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.3751938 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; West Asia &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0015596 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.9082219 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0253296 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.5112472 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.0563454 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.9416803 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.0834793 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.9668400 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; West Europe &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 21 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0047711 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.7660808 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.0065084 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.5981729 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.6338858 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8928619 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.3737050 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.4120189 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;
+
+---
+
+# Structural Equation Modeling (SEM)
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-8-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Path Summary
+
+--
+
+&lt;div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:350px; overflow-x: scroll; width:700px; "&gt;&lt;table class=" lightable-paper" style='font-family: "Arial Narrow", arial, helvetica, sans-serif; margin-left: auto; margin-right: auto;'&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; Effect &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; ADMIX &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; ARO &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; AUS &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; IND &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; TEJ &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; TRJ &lt;/th&gt;
+   &lt;th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;"&gt; Proposed.interpretation &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FLN_HHG &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.77 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.88 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.98 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.98 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.61 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; HHG variation is strongly influenced by FLN; Decreasing FLN increases grain weight except in TEJ &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; PNN_HHG &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.44 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.18 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.55 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.42 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; HHG variation is strongly influenced by PNN except in IND &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; FGN_HHG &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.42 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1.57 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.46 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.71 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Increase in filled grain per panicle increases test weight except in TEJ and TRJ &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; DTH_PTH &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.46 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.21 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.23 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; There is a relationship between DTH and PTH in ADMIX, TEJ and TRJ, although causality is not asumed &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; DTH_FGN &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.41 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.53 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.56 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; DTH either increases or decreses FGN depending on the rice subpopulation &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; DTH_PNN &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Panicle number is not dependent on days to heading &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; DTH_FLN &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.53 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.35 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; DTH regulates FLN &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; PTH_FGN &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PTH controls FGN in AUS &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; PTH_FLN &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PTH controls FLN in TEJ &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; PTH_PNN &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -0.35 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NS &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; PTH controls PNN in TEJ &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;&lt;/div&gt;
+
+---
+
+# Predicting test weight with total floret number
+
+--
+
+&lt;img src="PRESENTATION_OKINEDO_UZEZI_2020_files/figure-html/unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+---
+
+class: inverse, middle, center
+
+# Summary
+
+---
+
+# Key Points
+
+- Total florets per panicle has the most significant association
+
+
+
+- Based on the Root Mean Square Error of Approximation (RMSEA &gt; 0.5) and Standardized Root Mean Square Residual (SRMSR), the model was a good fit for the data.
+
+
+
+
+- Plant height is an important in test weight improvement in the Temperate Japonicas
+
+
+
+
+- Indirect effect traits like Days to heading affects test weight via floret number and should be fully considered for breeding purposes TEJ and TRJ subpopulations
+
+---
+
+
+class: inverse, middle, center
+
+# Thank you!
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

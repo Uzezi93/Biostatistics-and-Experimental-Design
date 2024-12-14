@@ -1,0 +1,394 @@
+---
+title: "Cross-Validation and Bayes"
+author: "Uzezi Okinedo"
+date: "10/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+
+# load all required libraries
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(rsample)
+library(modelr)
+library(boot)
+library(AICcmodavg)
+library(tidyr)
+library(ISLR)
+library(ggpmisc)
+library(palmerpenguins)
+library(rgl)
+library(rayshader)
+
+```
+
+**1. Create models with different polys**
+
+Let’s first look at the data. Plot it, along with a polynomial fit (remember, formula = y ~ poly(x,2) for a quadratic). Then, compare the r2 value of a linear versus fifth order fit. What do you see?
+
+```{r plot data with polynomial fit}
+
+# read progesterone data
+progesterone_data <- read.csv("./raw_data/all_data/chapter17/chap17q07ProgesteroneExercise.csv")
+
+# view data
+progesterone_data
+
+# Basic scatter plot using ggplot2
+ggplot(progesterone_data, aes(x= progesterone, y= ventilation)) +
+  geom_point() +
+  #plot with a polynomial fit using formula = y ~ poly(x,2)
+  stat_smooth(method = lm, formula = y ~ poly(x, 5)) +
+  stat_poly_eq(formula = y ~ poly(x, 5), parse = TRUE)
+
+#fit a linear model
+progesterone_lm <- lm(ventilation ~ progesterone, data=progesterone_data)
+#fit a polynomial model
+progesterone_poly <- lm(ventilation ~ poly(progesterone, 5), data = progesterone_data)
+
+# check r2 value of linear model
+summary(progesterone_lm)$r.squared
+# check r2 value of polynomial model
+summary(progesterone_poly)$r.squared
+
+```
+The r2 value of fifth order fit (0.2460284) is slighter higher than the linear fit (0.2371781).
+
+
+**2. Fit each model with 5-fold CV**
+
+Does that result hold up, or is it due to overfitting? Let’s evaluate by comparing 5-fold CV scores using RMSE. Let’s do this efficiently, though!
+
+**A.** Get things ready! Make a 5-fold cross validation tibble using rsample::vfold_cv() and then combine each possible fold with the polynomials 1:5 using tidyr::crossing()
+
+```{r fit each model with 5-fold cv}
+
+# 5-Fold Cross-Validation
+
+# make a folded data set object using tidyr::crossing()
+progesterone_five_fold <- vfold_cv(progesterone_data, v = 5) %>%
+  # use polynomials 1:5
+  crossing(polynomial = 1:5)
+
+# view CV data
+progesterone_five_fold
+
+```
+
+
+**B.** Now you have splits and a column of coefficients. Use purr::map2() to make a list column of fit models, where you use the splits and data and the polynomials for your poly() call in the model.
+
+```{r make a list column to fit models}
+
+# start with our tibble
+prog_mod <- progesterone_five_fold %>%
+  # create a new column, which we make with map2
+  # iterating over all splits AND polynomials
+ mutate(mods = map2(splits, 
+                       polynomial, 
+                       ~lm(ventilation ~ poly(progesterone, .y),
+                           data = analysis(.x))))
+                    #for each split, fit a model using
+                    #the training data set
+                  
+
+# view data
+prog_mod
+
+
+```
+
+
+**C.** Great! Now, calculate the rmse for each fold/polynomial combination as we did in lab.
+
+```{r calculate the rmse for each fold/polynomial combination}
+
+progesterone_five_fold_rmse <- prog_mod %>%
+  # create a new column, which we make with map2
+  # iterating over all splits AND fit models
+  mutate(rmse = map2_dbl(.x = splits, .y = mods,
+                         ~rmse(model = .y,
+                               data = assessment(.x)))) # x is a standing for every element of split
+
+# view data
+progesterone_five_fold_rmse
+
+
+```
+
+**D.** Implications - ok, given that the 5-fold score is the average RMSE across all folds for a given polynomial, show in both a table and figure the relationship between polynomial and out-of-sample RMSE. What does this tell you?
+
+```{r relationship between polynomial and out of sample RMSE}
+
+# start with a tibble
+prog_4 <- progesterone_five_fold_rmse %>%
+  group_by(polynomial) %>%
+  summarise(avg_rmse = mean(rmse))
+
+# view data showing average rmse values for each fold
+prog_4
+
+# plot relationship between average rmse and polynomial
+  ggplot(data = prog_4,
+         mapping = aes(x = polynomial, y = avg_rmse)) +
+  geom_point() +
+    geom_line() +
+  scale_x_discrete(labels = NULL)
+
+
+```
+
+**3. Compare models and see how they differ from AIC**
+
+That was all well and good, but, how do these results compare to doing this analysis with AIC using the {AICcmodavg} package? Note, you can use dplyr and purrr to not have to fit each model manually.
+
+```{r AIC analysis of data}
+
+# create an object for each model
+prog_lm <- lm(ventilation ~ progesterone, data = progesterone_data)
+poly_2 <- lm(ventilation ~ poly(progesterone, 2), data = progesterone_data)
+poly_3 <- lm(ventilation ~ poly(progesterone, 3.), data = progesterone_data)
+poly_4 <- lm(ventilation ~ poly(progesterone, 4), data = progesterone_data)
+poly_5 <- lm(ventilation ~ poly(progesterone, 5), data = progesterone_data)
+
+# make a list of all models created
+mod_list <- list(prog_lm, poly_2, poly_3, poly_4, poly_5)
+# name each model
+name_vec <- c("1st order", "2nd order", "3rd order", "4th order", "5th order")
+
+# compute aic values
+aic_analysis <- aictab(cand.set = mod_list, modnames = name_vec)
+
+# view results
+aic_analysis
+
+```
+
+Lower value of AIC suggests "better" model. The model with the highest support is the one with the highest AIC weight (AICw closest to 1) which is the linear model.
+
+**EC 4. boot::gv.glm()**
+
+Let’s try again, for orders 1-5, but this time, let’s do a LOOCV analysis using boot::cv.glm(). Using dplyr and purrr will make things faster and more efficient here - perhaps even with something you created in #3, if you used glm() instead of lm().
+
+Although, if you do that, quick note that you will need to use a map2_*() function with polys in it so that it’s variable can match the . variable used. This may seem like a weird sentence. But, once you get the error that made me realize this, you’ll get it.
+
+```{r boot gv.glm}
+
+# create function that computes LOOCV MSE based on specified polynomial degree
+loocv_error <- function(x) {
+  glm.fit <- glm(ventilation ~ poly(progesterone, x), data = progesterone_data)
+  cv.glm(progesterone_data, glm.fit)$delta[1]%>% sqrt()
+}
+
+# compute LOOCV MSE for polynomial degrees 1-5
+1:5 %>% map_dbl(loocv_error)
+
+```
+
+**5. Grid sample with Bayes**
+Last week, we did grid sampling with Likelihood. This week, let’s do it with Bayes!
+
+p(H|D)=p(D|H)p(H)p(D)
+
+**A.** Let’s start with the Palmer Penguins data. Let’s look at just the Gentoo. Why don’t you plot the distribution of the average flipper length of females. We’ll use this data for the exercise. Remember to remove NAs - it will make the rest of the exercise easier. 1 EC for each thing you do to snaz the plot up.
+
+```{r Bayes}
+
+# create an object containing flipper length measurements of all Gentoo female penguins
+fem_flip <- penguins %>%
+  group_by(species) %>%
+  filter(species == "Gentoo", sex == "female") %>%
+  summarise(flipper_length_mm, sex) %>%
+  na.omit()
+
+# view object
+fem_flip 
+
+# plot the distribution of flipper length
+ggplot(data = fem_flip,
+       mapping = aes(x = flipper_length_mm, # Setting ggplot parameters
+                     fill = sex)) +
+  geom_density(add = "mean", alpha = 0.5) +
+  # add mean flipper length with geom_vline
+  geom_vline(xintercept = mean(fem_flip$flipper_length_mm), linetype="dotted", 
+                color = "black", size=0.8) +
+  labs(x ="Flipper Length", y = "Density",
+     title = "Distribution of flipper length in female Gentoo penguins")
+  
+  
+
+
+```
+
+**B.** OK, this is pretty normal, with a mean of 212.71 and sd of 3.9. Make a grid to search a number of values around that mean and SD, just as you did for likelihood. Let’s say 100 values of each parameter.
+
+```{r grid search}
+
+# make a grid to search a number of values around the frequentist mean and SD
+fem_flip_grid <- crossing(m = seq(212.5, 215.5, length.out = 100),
+                            s = seq(1.5, 4.5, length.out = 100))
+# view object
+fem_flip_grid
+                          
+```
+
+
+**C.** Write a function that will give you the numerator for any combination of m and s! This is just the same as writing a function for likelihood, but including an additional multiplier of p(H), when putting in the likelihood. Let’s assume a prior for m of dnorm(210, 50) and for s of dunif(1,10) - so, pretty weak!
+
+So, we want p(m, s|flipper length)*p(m)*p(s).
+
+BUT - small problem. These numbers get so vanishingly small, we can no longer do calculations with them. So, for any probability density you use, add log=TRUE and take a sum instead of products or multiplication, as
+
+log(p(D|H)p(H))=log(p(D|H))+log(p(H))
+
+```{r a function that will give you the numerator for any combination of m and s!}
+
+# a function that will give you the numerator for any combination of m and s!
+num_function <- function(m, s) {
+  
+  # Log likelihood:
+  dnorm(fem_flip$flipper_length_mm, m, s, log = TRUE) %>% sum() +
+    # plus the log priors results in log posterior:
+    dnorm(m, 210, 50, log = TRUE) %>% sum() +
+    dunif(s, 1, 10, log = TRUE) %>% sum()
+
+}
+
+# test function
+num_function(212, 4)
+```
+
+**D.** Great! Now use this function with your sample grid to get the numerator of the posterior, and then standardize with the p(D) - the sum of all numerators - to get a full posterior. Note, as we’re working in logs, we just subtract log(p(D)) What is the modal estimate of each parameter? How do they compare to the standard frequentist estimate?
+
+Note: log(p(d)) = log(sum(exp(p(D|H)p(H))))
+
+```{r get numerator of posterior}
+
+# to get numerator of posterior
+fem_flip_grid_post <- fem_flip_grid %>%
+  rowwise() %>%
+  mutate(pois_numerator = num_function(m, s),
+         poisterior = exp(pois_numerator)) %>%
+  ungroup() %>%
+  na.omit()
+
+fem_flip_grid_post
+
+# create a function to get modal estimate of each parameter
+getmode <- function(x) {
+  uniq <- unique(x)
+  uniq[which.max(tabulate(match(x, uniq)))]
+}
+
+# calculate estimated mode of mean and Sd using the mode function
+getmode(fem_flip_grid_post$m)
+getmode(fem_flip_grid_post$s)
+
+```
+The modal estimate of the mean is 212 while that of the SD is 1.5
+
+These values are lower than the frequentist estimates.
+
+**E.C. E**. Show me ’dat surface! Make it sing!
+
+```{r surface plot}
+
+# visualize with contour plot!
+raster_plot <- ggplot(data = fem_flip_grid_post %>% filter(pois_numerator > max(pois_numerator) - 1),
+       mapping = aes(x = m, y = s, fill = pois_numerator)) +
+ geom_raster() +
+  scale_fill_viridis_c()
+
+raster_plot
+
+
+```
+
+**E.C.** x2 F Compare our weak prior to one with a strong prior. Note, as you progress in this, instead of doing the product of p(D|H)p(H), you might want to do log(p(D|H)) + log(p(H)) as it simplifies calculations. The nice thing is then you just subtract log(p(D)) to get log(p(H|D)) - which you can then safely exponentiate!
+
+
+```{r compare weak prior to strong prior}
+
+# create a second function using stronger priors of mean and SD
+num_function_2 <- function(m, s) {
+  
+  # Log likelihood:
+  dnorm(fem_flip$flipper_length_mm, m, s, log = TRUE) %>% sum() +
+    # plus the log priors results in log posterior:
+    dnorm(m, 212, 4, log = TRUE) %>% sum() +
+    dunif(s, 2, 4, log = TRUE) %>% sum()
+
+}
+
+# get posterior 
+fem_flip_grid_post_2 <- fem_flip_grid_post %>%
+  rowwise() %>%
+  mutate(pois_numerator_2 = num_function_2(m, s),
+         poisterior_2 = exp(pois_numerator_2)) %>%
+  ungroup() %>%
+  na.omit()
+
+# view posterior
+fem_flip_grid_post_2
+
+# get modal estimates
+getmode(fem_flip_grid_post_2$m)
+getmode(fem_flip_grid_post_2$s)
+
+```
+I still got the same modal estimates of mean and SD of 212 and 1.5. 
+
+**6. Final Project Thinking**
+
+We’re at the half-way point in the course, and after the mid-term, it’s time to start thinking about your final project. So…. I want to know a bit about what you’re thinking of!
+
+**A.** What is the dataset you are thinking of working with? Tell me a bit about what’s in it, and where it comes from.
+
+I am thinking of working on a dataset obtained from the USDA-ARS, Dale Bumpers National Rice Research Center, Stuttgart, Arkansas, Genetic Stocks _Oryza_ Collection (www.ars.usda.gov/GSOR).
+
+
+**B.** What question do you want to ask of that data set?
+
+I am considering asking the following questions;
+
+i) What is the best model for evaluating genome-phenotype associations in African and Asian rice populations?
+
+ii) What is the extent of genetic variation between the two rice populations?
+
+**EC C.** Wanna make a quick visualization of some aspect of the data that might be provocative and interesting?
+
+```{r dataset visualization}
+
+# read in my interest data 
+rice_phenotype_data <- read.csv("raw_data/rice_phenotype_data.csv")
+
+# view data
+head(rice_phenotype_data)
+
+# create an object containing PNLG values for African and Asian cultivars
+plot_rice_data <- rice_phenotype_data %>%
+  # convert PNLG values to class numeric
+  mutate(PNLG_2 = as.numeric(PNLG)) %>%
+  group_by(Region) %>%
+  filter(Region %in% c("Africa","East Asia", "Southeast Asia", "South Asia", "West Asia")) %>%
+  summarise(PNLG_2) %>%
+  na.omit()
+
+# plot distribution of PNLG values
+ggplot(plot_rice_data,
+       aes(y = PNLG_2, fill = Region)) +
+  geom_boxplot() +
+  labs(y ="Panicle length /Inflorescence length (PNLG)",
+       title = "Distribution of panicle length in African and Asian populations of Oryza spp.")
+  
+
+```
+
+
+

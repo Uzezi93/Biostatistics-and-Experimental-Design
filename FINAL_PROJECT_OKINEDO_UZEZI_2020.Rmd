@@ -1,0 +1,1186 @@
+---
+title: Assessing variability and association of rice agronomic traits across subpopulations
+  and regions
+author: "Uzezi Okinedo"
+date: "11/27/2020"
+output: html_document 
+---
+
+
+
+
+
+# Introduction
+
+Over half of the world’s population depend on rice for survival as it serves as a major staple food for an estimated 66% of people in almost all regions. Therefore, increased rice production will play a crucial role in improving food security, eradicating poverty and supplementing energy demands as it currently provides over 20% of energy. Predictions have shown that when compared with 1995, 60% more rice will have to be produced by 2030 (Saleh et al., 2020).
+
+Influenced by quantitative trait loci (QTL) genes and environmental factors, yield is one of the most significant and complex trait in rice. In rice species, yield is determined by certain factors, classified as either direct or indirect. Direct determinants of yield include 1000 or 100 – grain weight depending on  the size of the grain, filled grains per panicle and panicle number per unit area and/or per plant, while indirect determinants include traits like plant height, growth period, tillering ability, panicle length, seed length, seed setting rate, and grains per panicle (Li et al., 2019).
+
+One major predictor of milling yield is test weight, a component used for the comparison of grain densities and it is derived by weighing a known grain volume. It is dependent on embryo size and reserved nutrient quantity which is used for germination and growth. Lower test weight scores occur due to unfavorable field environmental conditions or poor grain filling prior to harvest. Depending on grain size, the 100 or 1000 grain weight is an important measure of seed quality which has a positive effect on seedling growth, seed potential, sprouting and overall plant performance (Deivasigamani S & Swaminathan C, 2018).
+
+Over the years, studies have focused on overall rice yield prediction using agronomic traits (Miedaner et al., 2019; Prakash Poudel, 2018; Puji Lestari et al., 2015; Venkateswarlu et al., n.d.), where test weight has been the leading determinant of grain yield. However, the realization of yield potential which is measured by multiplying the number of spikelets per unit area by average grain weight is highly dependent on some latent factors (Venkateswarlu et al., n.d.). Considering the strong association between test weight and increased yield potential, it will be relatively important to explore factors that might influence or control test weight in rice cultivars. Therefore, this study seeks to;
+
+i)	Explore trait variation across subpopulations and regions.
+
+ii)	Examine the extent of association between test weight (100 seed weight) and yield attributing traits across rice subpopulations and geographical regions.
+
+iii)	Identify direct and latent factors influencing test weight across subpopulations.
+
+
+
+# Materials and Methods
+
+  **Rice Diversity Panel 1 Dataset**
+  
+The RDP1 (Reg. No. MP-6, NSL 500357 MAP) dataset is used in this study [here](https://www.ars.usda.gov/ARSUserFiles/60280500/RDP1/RDP1_JPR%20pheno%20and%20marker%20data%20for%20submission%20to%20GSOR-GRIN_v6_R2_08042016.xlsx). It broadly represents the wide range of phenotypic and genotypic variation within _O. sativa_. It consists of 421 purified homozygous rice (Oryza sativa L.) accessions (GSOR 301001 through GSOR 301421; GSOR 312001 through 312020) which include both landraces and elite rice cultivars. Accessions are classified into five subpopulation groups namely; indica (95 accessions) and aus (60), which belong to the Indica varietal group, and tropical japonica (106), temperate japonica (111), and aromatic (Group V) (16) which comprise the Japonica varietal group. Thirty-three accessions shared <60% ancestry with a single group and were classified as admixtures (Eizenga et al., 2014). Data can be downloaded here (usda.gov). The data selected for the analysis included the following trait data; 100 seed weight (HHGW), panicle number per unit area (PNN), filled grain number per panicle (FGN), plant height (PTH), panicle length (PNL), total florets per panicle (FLN).
+
+  **Statistical Analysis**
+  
+All statistical analysis were carried out in R version 4.0.2. Data was loaded into R studio and all missing values and unknown groups were filtered out. For descriptive statistics, boxplots were plotted using the ‘ggplot2’ package to show the distribution of traits across all regions and subpopulations. Before inferential statistical analysis were performed, data was preprocessed and normalized using the caret package after which density plots were drawn to visualize normality. PCA analysis was performed using the ‘ggbiplot’ package. Standardized major axis (SMA) slopes were used for the summary of bivariate trait relationships and to test whether the regression of test weight and other agronomic traits differed among subpopulations and regions. SMA regression was carried out using the ‘smart’ package. Multivariate causal network for all selected traits was quantified with a Structural Equation Model (SEM) using the ‘lavaan’ package. SEM combines multiple regression analysis and factor analysis for the evaluation of structural relationships, estimating interrelated dependence in a single analysis (Li et al., 2019; Regression & Models, 2005). A general linear regression was performed, where the most correlated variable, FLN was used as predictor for test weight across subpopulation and region. All relevant assumptions were tested and post hoc analyses were carried out.
+
+
+# Analysis and Results
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+
+```{r load libraries}
+
+# load all required libraries
+library(tidyverse)
+library(smatr)
+library(Cairo)
+library(extrafont)
+library(clusterSim)
+library(caret)
+library(grid)
+library(gridExtra)
+library(scales)
+library(ggpubr)
+library(lavaan)
+library(semPlot)
+library(devtools)
+library(multcomp)
+library(car)
+library(emmeans)
+library(modelr)
+#library(ggbiplot)
+library(kableExtra)
+
+```
+
+  **Distribution of subpopulations across regions**
+
+```{r data analysis}
+
+# load data and clean names
+rice <- read.csv("./raw_data/rice_phenotype_data.csv") %>%
+  janitor::clean_names() %>%
+  filter(!subpopulation_group_pca %in% "N/A") %>%
+  filter(!region %in% "Unknown") %>%
+  na.omit()
+  
+# view data
+head(rice)
+
+# check data structure
+str(rice)
+
+# convert characters to class numeric
+rice2 <- rice %>%
+  mutate(hhulgrwt1 = as.numeric(hhulgrwt),
+         hulgrvol1 = as.numeric(hulgrvol),
+         ptht1 = as.numeric(ptht),
+         pnlg1 = as.numeric(pnlg),
+         pnnb1 = as.numeric(pnnb),
+         dthd1 = as.numeric(dthd),
+         filgrnb1 = as.numeric(filgrnb),
+         flnbppn1 = as.numeric(flnbppn))
+
+# str data
+str(rice2)
+
+# Distribution of subpopulations across all regions
+
+# create an object for total region counts
+totals <- rice2 %>% 
+  count(region)
+
+# create a barplot object
+barplot <- rice2 %>%
+  count(subpopulation_group_pca, region) %>%
+  filter(n !=10) %>%
+  ggplot(aes(y = region, x = n)) +
+  geom_bar(stat = "identity", aes(fill = subpopulation_group_pca)) +
+  theme(axis.text.x = element_text(angle = 90, vjust=0.3, hjust=1)) +
+  geom_text(data = totals, aes(label = n), cex = 3) +
+  labs(y ="Regions", title = "Distribution of subpopulations across regions") 
+
+# visulaize barplot
+barplot
+
+```
+
+East Asia had the highest number of accessions (76) consisting of four sub-populations, with Temperate Japonica (TEJ) and Indica varieties (IND) occupying a significant proportion. The Admixed (ADMIX) subpopulation can be found in almost all regions except Oceania, Central Asia, Central America and the Caribbean regions with the lowest number of accessions (6)
+
+  **Trait differences across regions and sub-populations**
+
+```{r trait distribution across sub-populations}
+
+# trait differences across regions and across sub-populations
+hhulgrwt <- ggplot(rice2,
+       aes(y = hhulgrwt1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="100-Seed weight") 
+
+
+ptht <- ggplot(rice2,
+       aes(y = ptht1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="Plant Height") 
+
+
+pnlg <- ggplot(rice2,
+       aes(y = pnlg1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="Panicle length
+Inflorescence length") 
+
+
+pnnb <- ggplot(rice2,
+       aes(y = pnnb1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="Panicles per plant
+Inflorescence per plant") 
+
+
+dthd <- ggplot(rice2,
+       aes(y = dthd1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="Days to heading") 
+
+
+filgrnb <- ggplot(rice2,
+       aes(y = filgrnb1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="Seeds per panicle
+Filled florets per panicle")
+
+
+flnbppn <- ggplot(rice2,
+       aes(y = flnbppn1, fill = region)) +
+  geom_boxplot() +
+  labs(y ="Total Florets per panicle")
+
+
+
+ggarrange(hhulgrwt, ptht, pnlg, pnnb, dthd, filgrnb, flnbppn  + rremove("x.text"), common.legend = TRUE, ncol = 2, nrow = 2)
+
+
+#------------------------------------------------------------------------------
+
+
+# trait differences across subpopulations
+hhulgrwt <- ggplot(rice2,
+       aes(y = hhulgrwt1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="100-Seed weight") 
+
+
+ptht <- ggplot(rice2,
+       aes(y = ptht1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="Plant Height") 
+
+
+pnlg <- ggplot(rice2,
+       aes(y = pnlg1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="Panicle length
+Inflorescence length") 
+
+
+pnnb <- ggplot(rice2,
+       aes(y = pnnb1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="Panicles per plant
+Inflorescence per plant") 
+
+
+dthd <- ggplot(rice2,
+       aes(y = dthd1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="Days to heading") 
+
+
+filgrnb <- ggplot(rice2,
+       aes(y = filgrnb1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="Seeds per panicle
+Filled florets per panicle")
+
+
+flnbppn <- ggplot(rice2,
+       aes(y = flnbppn1, fill = subpopulation_group_pca)) +
+  geom_boxplot() +
+  labs(y ="Total Florets per panicle")
+
+
+# arrange all plots side by side using ggarrange
+ggarrange(hhulgrwt, ptht, pnlg, pnnb, dthd, filgrnb, flnbppn, rremove("x.text"), common.legend = TRUE, ncol = 2, nrow = 2)
+
+```
+
+
+  **Data normalization for regression analysis**
+
+```{r sma analysis}
+
+# scale and center data using Caret library
+preproc1 <- preProcess(rice2[,39:46], method=c("center", "scale"))
+
+# normalize data with mean 0 and standard deviation 1 
+norm1 <- predict(preproc1, rice2[,39:46]) %>%
+  mutate(region = rice2$region,
+         subpopulation =rice2$subpopulation_group_pca) %>%
+  na.omit() %>%
+  dplyr::rename(HHGW = hhulgrwt1,
+         HGV = hulgrvol1,
+         PTH = ptht1,
+         PNL = pnlg1,
+         PNN = pnnb1,
+         DTH = dthd1,
+         FGN = filgrnb1,
+         FLN = flnbppn1)
+
+# summary of normalized data 
+summary(norm1)
+
+
+# View distributions after data normalization}
+
+norm1 %>%
+  group_by(subpopulation) %>%
+  summarise(subpopulation, HHGW) %>%
+  ggplot(aes(x = HHGW, fill = subpopulation)) +
+  geom_density(alpha = 0.7) +
+  facet_wrap(~subpopulation, ncol = 2) +
+  labs(title = "Distribution of grain weight after normalization")
+
+```
+
+  **Principal Component Analysis**
+
+```{r ggbiplot}
+
+# I encountered an error downloading the ggbiplot package from GitHub so I copied the function code from the GitHub repo.
+
+ggbiplot <- function(pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE, 
+                     obs.scale = 1 - scale, var.scale = scale, 
+                     groups = NULL, ellipse = FALSE, ellipse.prob = 0.68, 
+                     labels = NULL, labels.size = 3, alpha = 1, 
+                     var.axes = TRUE, 
+                     circle = FALSE, circle.prob = 0.69, 
+                     varname.size = 3, varname.adjust = 1.5, 
+                     varname.abbrev = FALSE, ...)
+{
+  library(ggplot2)
+  library(plyr)
+  library(scales)
+  library(grid)
+  
+  stopifnot(length(choices) == 2)
+  
+  # Recover the SVD
+  if(inherits(pcobj, 'prcomp')){
+    nobs.factor <- sqrt(nrow(pcobj$x) - 1)
+    d <- pcobj$sdev
+    u <- sweep(pcobj$x, 2, 1 / (d * nobs.factor), FUN = '*')
+    v <- pcobj$rotation
+  } else if(inherits(pcobj, 'princomp')) {
+    nobs.factor <- sqrt(pcobj$n.obs)
+    d <- pcobj$sdev
+    u <- sweep(pcobj$scores, 2, 1 / (d * nobs.factor), FUN = '*')
+    v <- pcobj$loadings
+  } else if(inherits(pcobj, 'PCA')) {
+    nobs.factor <- sqrt(nrow(pcobj$call$X))
+    d <- unlist(sqrt(pcobj$eig)[1])
+    u <- sweep(pcobj$ind$coord, 2, 1 / (d * nobs.factor), FUN = '*')
+    v <- sweep(pcobj$var$coord,2,sqrt(pcobj$eig[1:ncol(pcobj$var$coord),1]),FUN="/")
+  } else if(inherits(pcobj, "lda")) {
+    nobs.factor <- sqrt(pcobj$N)
+    d <- pcobj$svd
+    u <- predict(pcobj)$x/nobs.factor
+    v <- pcobj$scaling
+    d.total <- sum(d^2)
+  } else {
+    stop('Expected a object of class prcomp, princomp, PCA, or lda')
+  }
+  
+  # Scores
+  choices <- pmin(choices, ncol(u))
+  df.u <- as.data.frame(sweep(u[,choices], 2, d[choices]^obs.scale, FUN='*'))
+  
+  # Directions
+  v <- sweep(v, 2, d^var.scale, FUN='*')
+  df.v <- as.data.frame(v[, choices])
+  
+  names(df.u) <- c('xvar', 'yvar')
+  names(df.v) <- names(df.u)
+  
+  if(pc.biplot) {
+    df.u <- df.u * nobs.factor
+  }
+  
+  # Scale the radius of the correlation circle so that it corresponds to 
+  # a data ellipse for the standardized PC scores
+  r <- sqrt(qchisq(circle.prob, df = 2)) * prod(colMeans(df.u^2))^(1/4)
+  
+  # Scale directions
+  v.scale <- rowSums(v^2)
+  df.v <- r * df.v / sqrt(max(v.scale))
+  
+  # Change the labels for the axes
+  if(obs.scale == 0) {
+    u.axis.labs <- paste('standardized PC', choices, sep='')
+  } else {
+    u.axis.labs <- paste('PC', choices, sep='')
+  }
+  
+  # Append the proportion of explained variance to the axis labels
+  u.axis.labs <- paste(u.axis.labs, 
+                       sprintf('(%0.1f%% explained var.)', 
+                               100 * pcobj$sdev[choices]^2/sum(pcobj$sdev^2)))
+  
+  # Score Labels
+  if(!is.null(labels)) {
+    df.u$labels <- labels
+  }
+  
+  # Grouping variable
+  if(!is.null(groups)) {
+    df.u$groups <- groups
+  }
+  
+  # Variable Names
+  if(varname.abbrev) {
+    df.v$varname <- abbreviate(rownames(v))
+  } else {
+    df.v$varname <- rownames(v)
+  }
+  
+  # Variables for text label placement
+  df.v$angle <- with(df.v, (180/pi) * atan(yvar / xvar))
+  df.v$hjust = with(df.v, (1 - varname.adjust * sign(xvar)) / 2)
+  
+  # Base plot
+  g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
+    xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal()
+  
+  if(var.axes) {
+    # Draw circle
+    if(circle) 
+    {
+      theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, length = 50))
+      circle <- data.frame(xvar = r * cos(theta), yvar = r * sin(theta))
+      g <- g + geom_path(data = circle, color = muted('white'), 
+                         size = 1/2, alpha = 1/3)
+    }
+    
+    # Draw directions
+    g <- g +
+      geom_segment(data = df.v,
+                   aes(x = 0, y = 0, xend = xvar, yend = yvar),
+                   arrow = arrow(length = unit(1/2, 'picas')), 
+                   color = muted('red'))
+  }
+  
+  # Draw either labels or points
+  if(!is.null(df.u$labels)) {
+    if(!is.null(df.u$groups)) {
+      g <- g + geom_text(aes(label = labels, color = groups), 
+                         size = labels.size)
+    } else {
+      g <- g + geom_text(aes(label = labels), size = labels.size)      
+    }
+  } else {
+    if(!is.null(df.u$groups)) {
+      g <- g + geom_point(aes(color = groups), alpha = alpha)
+    } else {
+      g <- g + geom_point(alpha = alpha)      
+    }
+  }
+  
+  # Overlay a concentration ellipse if there are groups
+  if(!is.null(df.u$groups) && ellipse) {
+    theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, length = 50))
+    circle <- cbind(cos(theta), sin(theta))
+    
+    ell <- ddply(df.u, 'groups', function(x) {
+      if(nrow(x) <= 2) {
+        return(NULL)
+      }
+      sigma <- var(cbind(x$xvar, x$yvar))
+      mu <- c(mean(x$xvar), mean(x$yvar))
+      ed <- sqrt(qchisq(ellipse.prob, df = 2))
+      data.frame(sweep(circle %*% chol(sigma) * ed, 2, mu, FUN = '+'), 
+                 groups = x$groups[1])
+    })
+    names(ell)[1:2] <- c('xvar', 'yvar')
+    g <- g + geom_path(data = ell, aes(color = groups, group = groups))
+  }
+  
+  # Label the variable axes
+  if(var.axes) {
+    g <- g + 
+      geom_text(data = df.v, 
+                aes(label = varname, x = xvar, y = yvar, 
+                    angle = angle, hjust = hjust), 
+                color = 'darkred', size = varname.size)
+  }
+  # Change the name of the legend for groups
+  # if(!is.null(groups)) {
+  #   g <- g + scale_color_brewer(name = deparse(substitute(groups)), 
+  #                               palette = 'Dark2')
+  # }
+  
+  # TODO: Add a second set of axes
+  
+  return(g)
+}
+
+```
+  
+
+```{r PCA}
+
+# compute PCA 
+rice.pca <- prcomp(norm1[,1:8], center = TRUE,scale. = TRUE)
+
+# view pca summary
+summary(rice.pca)
+
+# view pca structure
+str(rice.pca)
+
+P <- ggbiplot(rice.pca,
+         obs.scale = 1, 
+         var.scale=1,
+         ellipse=F,
+         circle=F,
+         varname.size=4,
+         var.axes=T,
+         groups=norm1$subpopulation, #no need for coloring, I'm making the points invisible
+         alpha=0) #invisible points, I add them below
+P$layers <- c(geom_point(aes(color=norm1$subpopulation), cex=3), P$layers) #add geom_point in a layer underneath (only way I have to change the size of the points in ggbiplot)
+
+P
+
+```
+
+For the principal component plot, PC1 accounted for 37.2% of the total variation and was associated with FGN, FLN, PNL, DTH and PNN. The first quadrat of PC1 formed a cluster comprising ADMIX, AUS and IND scoring high for FGN, FLN, PNL and DTH, while IND and AUS formed the major cluster in the second quadrat scoring low for PTH and PNN. TEJ and ADMIX were the major clusters found in PC2 which accounted for 25.3%. It was associated with HHGW and HGV, which scored high on the first quadrat, while the second quadrat contained some clusters of TEJ, ADMIX and AUS.
+
+
+  **Standardized Major Axis (SMA) regression**
+  
+  **Relationship between Test weight and other agronomic traits**
+    
+```{r sma analysis and plot across subpopulations}
+
+# To plot relationship between seed per panicle and test weight across subpopulations
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$subpopulation), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~FGN*subpopulation, data=subset(norm1, subpopulation == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(subpopulation = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between seed per panicle and test weight across subpopulations
+seeds_per_panicle <- ggplot(norm1) +
+  geom_point(aes(x=FGN, y=HHGW, color=subpopulation)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Seeds per panicle", y = "100 seed weight",
+       title = "Relationship between test weight and seeds per panicle across subpopulations")
+
+# visualize relationship
+seeds_per_panicle
+
+# make a facet-wrap to view relationship across groups
+seeds_per_panicle + facet_wrap(~subpopulation, ncol=2)
+
+# Perform sma analysis for seed per panicle across subpopulations
+filgrnb_sma <-sma(HHGW~FGN*subpopulation, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+filgrnb_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")       # Using KableExtra table formatting
+
+
+#------------------------------------------------------------------------------
+
+# To plot the relationship between Total Florets per panicle and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$subpopulation), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~FLN*subpopulation, data=subset(norm1, subpopulation == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(subpopulation = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between seed per panicle and test weight across subpopulations
+florets_per_panicle <- ggplot(norm1) +
+  geom_point(aes(x=FLN, y=HHGW, color=subpopulation)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Total Florets per Panicle", y = "100 seed weight",
+       title = "Relationship between test weight and total florets per panicle across subpopulations")
+
+# visualize relationship
+florets_per_panicle
+
+# make a facet-wrap to view relationship across groups
+florets_per_panicle + facet_wrap(~subpopulation, ncol=2)
+
+# Perform sma analysis for Total Florets per panicle across subpopulations
+flnbppn_sma <-sma(HHGW~FLN*subpopulation, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+flnbppn_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")        # Using KableExtra table formatting
+
+#------------------------------------------------------------------------------
+
+
+# To estimate the relationship between panicles per plant and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$subpopulation), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~FLN*subpopulation, data=subset(norm1, subpopulation == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(subpopulation = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between panicles per plant and test weight across subpopulations
+panicles_per_plant <- ggplot(norm1) +
+  geom_point(aes(x=PNN, y=HHGW, color=subpopulation)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Panicle per plant", y = "100 seed weight",
+       title = "Relationship between test weight and panicles per plant across subpopulations")
+
+# visualize relationship
+panicles_per_plant
+
+# make a facet-wrap to view relationship across groups
+panicles_per_plant + facet_wrap(~subpopulation, ncol=2)
+
+# Perform sma analysis for panicles per plant across subpopulations
+pnnb_sma <-sma(HHGW~PNN*subpopulation, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+pnnb_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")            # Using KableExtra table formatting
+
+#------------------------------------------------------------------------------
+
+# To estimate the relationship between plant height and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$subpopulation), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~PTH*subpopulation, data=subset(norm1, subpopulation == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(subpopulation = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between plant height and test weight across subpopulations
+plant_height <- ggplot(norm1) +
+  geom_point(aes(x=PTH, y=HHGW, color=subpopulation)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Plant height", y = "100 seed weight",
+       title = "Relationship between test weight and plant height across regions")
+
+# visualize relationship
+plant_height
+
+# make a facet-wrap to view relationship across groups
+plant_height + facet_wrap(~subpopulation, ncol=2)
+
+# Perform sma analysis for panicles per plant across subpopulations
+ptht_sma <-sma(HHGW~PTH*subpopulation, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+ptht_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")            # Using KableExtra table formatting
+#------------------------------------------------------------------------------
+
+
+# To estimate the relationship between days to heading and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$subpopulation), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~DTH*subpopulation, data=subset(norm1, subpopulation == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(subpopulation = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between days to heading and test weight across subpopulations
+days_to_heading <- ggplot(norm1) +
+  geom_point(aes(x=DTH, y=HHGW, color=subpopulation)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Days to heading", y = "100 seed weight",
+       title = "Relationship between test weight and Days to Heading across subpopulations")
+
+# visualize relationship
+days_to_heading
+
+# make a facet-wrap to view relationship across groups
+days_to_heading + facet_wrap(~subpopulation, ncol=2)
+
+# Perform sma analysis for days to heading across subpopulations
+dthd_sma <-sma(HHGW~DTH*subpopulation, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+dthd_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")            # Using KableExtra table formatting
+
+```
+
+```{r sma regression and plot across regions}
+
+# To relationship between seed per panicle and test weight across regions
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$region), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~FGN*region, data=subset(norm1, region == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(region = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between seed per panicle and test weight across regions
+seeds_per_panicle <- ggplot(norm1) +
+  geom_point(aes(x=FGN, y=HHGW, color=region)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Seeds per panicle", y = "100 seed weight",
+       title = "Relationship between test weight and seeds per panicle across regions")
+
+# visualize relationship
+seeds_per_panicle
+
+# make a facet-wrap to view relationship across groups
+seeds_per_panicle + facet_wrap(~region, ncol=2)
+
+# Perform sma analysis for seed per panicle across regions
+filgrnb1_sma <-sma(HHGW~FGN*region, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+filgrnb1_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")      # Using KableExtra table formatting
+
+
+
+#------------------------------------------------------------------------------
+
+# To estimate the relationship between Total Florets per panicle and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$region), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~FLN*region, data=subset(norm1, region == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(region= x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between seed per panicle and test weight across regions
+florets_per_panicle <- ggplot(norm1) +
+  geom_point(aes(x=FLN, y=HHGW, color=region)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Total Florets per Panicle", y = "100 seed weight",
+       title = "Relationship between test weight and total florets per panicle across regions")
+
+# visualize relationship
+florets_per_panicle
+
+# make a facet-wrap to view relationship across groups
+florets_per_panicle + facet_wrap(~region, ncol=2)
+
+# Perform sma analysis for Total Florets per panicle across regions
+flnbppn1_sma <-sma(HHGW~FLN*region, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+flnbppn1_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")       # Using KableExtra table formatting
+
+#------------------------------------------------------------------------------
+
+# To estimate the relationship between panicles per plant and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$region), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~PNN*region, data=subset(norm1, region == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(region = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between panicles per plant and test weight across regions
+panicles_per_plant <- ggplot(norm1) +
+  geom_point(aes(x=PNN, y=HHGW, color=region)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Panicle per plant", y = "100 seed weight",
+       title = "Relationship between test weight and panicles per plant across regions")
+
+# visualize relationship
+panicles_per_plant
+
+# make a facet-wrap to view relationship across regions
+panicles_per_plant + facet_wrap(~region, ncol=2)
+
+# Perform sma analysis for panicles per plant across regions
+pnnb1_sma <-sma(HHGW~PNN*region, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+pnnb1_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")          # Using KableExtra table formatting
+#------------------------------------------------------------------------------
+
+# To estimate the relationship between plant height and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$region), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~PNN*region, data=subset(norm1, region == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(region = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between plant height and test weight across regions
+plant_height <- ggplot(norm1) +
+  geom_point(aes(x=PNN, y=HHGW, color=region)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Plant height", y = "100 seed weight",
+       title = "Relationship between test weight and plant height across regions")
+
+# visualize relationship
+plant_height
+
+# make a facet-wrap to view relationship across regions
+plant_height + facet_wrap(~region, ncol=2)
+
+# Perform sma analysis for panicles per plant across regions
+ptht1_sma <-sma(HHGW~PNN*region, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+ptht1_sma$groupsummary%>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")          # Using KableExtra table formatting
+
+#------------------------------------------------------------------------------
+
+# To estimate the relationship between days to heading and 100 seed weight
+
+# assembly sma model coefficients into smaller objects using do.call and rbind
+do.call(rbind, lapply(unique(norm1$region), function(x) {
+  # make object for sma model and subset population
+  obj <- sma(HHGW~DTH*region, data=subset(norm1, region == x), multcomp=TRUE,multcompmethod="adjusted")
+  data.frame(region = x, 
+             intercept=obj$coef[[1]][1, 1],
+             slope=obj$coef[[1]][2, 1])
+})) -> fits
+
+# plot relationship between days to heading and test weight across regions
+days_to_heading <- ggplot(norm1) +
+  geom_point(aes(x=DTH, y=HHGW, color=region)) +
+  geom_abline(data=fits, aes(slope=slope, intercept=intercept)) +
+  labs(x = "Days to heading", y = "100 seed weight",
+       title = "Relationship between test weight and Days to Heading across regions")
+
+# visualize relationship
+days_to_heading
+
+# make a facet-wrap to view relationship across regions
+days_to_heading + facet_wrap(~region, ncol=2)
+
+# Perform sma analysis for Days to heading across regions
+dthd1_sma <-sma(HHGW~DTH*region, data=norm1,multcomp=TRUE,multcompmethod="adjusted")
+
+# view group summary
+dthd1_sma$groupsummary %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")          # Using KableExtra table formatting
+
+
+```
+There was a strong relationship between HHGW - FGN for all rice subpopulations (Table 1). Negative associations were observed in ADMIX (slope = -1.06, p < 0.01), ARO (slope = -3.32, p < 0.01), AUS (slope = -0.69, p < 0.01) and TRJ (slope = -0.95, p < 0.01), while IND (slope = 0.82, p < 0.01) and TEJ (slope = 0.95, p < 0.01) showed positive associations. Across regions, only Africa (slope = -1.14, p = 0.052) showed a significant negative association between these traits. 
+
+For HHGW - FLN, all subpopulations showed a strong negative association except TEJ (slope = 1.01, p < 0.01) which had a positive association. Africa (slope = -1.22, p < 0.01), North America (slope = -0.75, p = 0.04), South America (slope = -1.25, p < 0.01) and South Asia (slope = -0.80, p = 0.03) were the only regions with significant relationships and they all exhibited a negative association.
+
+ADMIX (slope = -1.31, p < 0.01), AUS (slope = -0.90, p = 0.03) and TEJ (slope = -1.46, p = 0.01) all showed strong negative associations for HHGW – PNN relationship. East Asia (slope = -0.84, p < 0.01), East Europe (slope = -1.61, p = 0.04), South America (slope = -1.09, p < 0.01), Southeast Asia (slope = -0.84, p < 0.01) and West Asia (slope = -1.00, p = 0.05) all showed a strong negative association.
+
+No significant association was observed across all subpopulations for HHGW- PTH relationship. East Asia (slope = -0.84, p < 0.01), East Europe (slope = -1.61, p < 0.04), South America (slope = -1.09, p < 0.01), Southeast Asia (slope = -0.84, p < 0.01) and West Asia (slope = -0.99, p = 0.05) regions all showed strong negative associations. 
+
+Significant associations were not found across subpopulations for HHGW – DTH relationship. Nevertheless, significant negative associations were found only in South America (slope = -1.07, p = 0.04) and South Asia (slope = -0.89, p = 0.04).
+
+
+ 
+  **Structural Equation Modeling (SEM)**
+  
+```{r SEM analysis}
+
+#sem for ADMIX
+data<-subset(norm1,subpopulation=='ADMIX')
+sitemod <- 'HHGW~FGN+PNN+FLN
+            FGN~~PNN
+            PNN~~FLN
+            FGN~DTH+PTH
+            PNN~DTH+PTH
+            FLN~DTH+PTH
+            DTH~~PTH'        
+
+# model/sem anylysis
+sitemod.fit <- lavaan::sem(sitemod, data = data)
+
+#summary of the results
+summary(sitemod.fit, fit.measures=TRUE)
+
+#plot our CFA. you can change layout with layout = argument. see ?semPaths() for more. 
+semPlot::semPaths(sitemod.fit, "par", edge.label.cex = 1.2, fade = FALSE)
+title("ADMIX")
+
+#------------------------------------------------------------------------------
+
+#sem for ARO
+data<-subset(norm1,subpopulation=='ARO')
+sitemod <- 'HHGW~FGN+PNN+FLN
+            FGN~~PNN
+            PNN~~FLN
+            FGN~DTH+PTH
+            PNN~DTH+PTH
+            FLN~DTH+PTH
+            DTH~~PTH'        
+
+# model/sem anylysis
+sitemod.fit <- lavaan::sem(sitemod, data = data)
+
+#summary of the results
+summary(sitemod.fit, fit.measures=TRUE)
+
+#plot our CFA. you can change layout with layout = argument. see ?semPaths() for more. 
+semPlot::semPaths(sitemod.fit, "par", edge.label.cex = 1.2, fade = FALSE)
+title("ARO")
+
+#------------------------------------------------------------------------------
+
+#sem for AUS
+data<-subset(norm1,subpopulation=='AUS')
+sitemod <- 'HHGW~FGN+PNN+FLN
+            FGN~~PNN
+            PNN~~FLN
+            FGN~DTH+PTH
+            PNN~DTH+PTH
+            FLN~DTH+PTH
+            DTH~~PTH'        
+
+# model/sem anylysis
+sitemod.fit <- lavaan::sem(sitemod, data = data)
+
+#summary of the results
+summary(sitemod.fit, fit.measures=TRUE)
+
+#plot our CFA. you can change layout with layout = argument. see ?semPaths() for more. 
+semPlot::semPaths(sitemod.fit, "par", edge.label.cex = 1.2, fade = FALSE)
+title("AUS")
+
+#------------------------------------------------------------------------------
+
+#sem for IND
+data<-subset(norm1,subpopulation=='IND')
+sitemod <- 'HHGW~FGN+PNN+FLN
+            FGN~~PNN
+            PNN~~FLN
+            FGN~DTH+PTH
+            PNN~DTH+PTH
+            FLN~DTH+PTH
+            DTH~~PTH'        
+
+# model/sem anylysis
+sitemod.fit <- lavaan::sem(sitemod, data = data)
+
+#summary of the results
+summary(sitemod.fit, fit.measures=TRUE)
+
+#plot our CFA. you can change layout with layout = argument. see ?semPaths() for more. 
+semPlot::semPaths(sitemod.fit, "par", edge.label.cex = 1.2, fade = FALSE)
+title("IND")
+
+#------------------------------------------------------------------------------
+
+#sem for TEJ
+data<-subset(norm1,subpopulation=='TEJ')
+sitemod <- 'HHGW~FGN+PNN+FLN
+            FGN~~PNN
+            PNN~~FLN
+            FGN~DTH+PTH
+            PNN~DTH+PTH
+            FLN~DTH+PTH
+            DTH~~PTH'        
+
+# model/sem anylysis
+sitemod.fit <- lavaan::sem(sitemod, data = data)
+
+#summary of the results
+summary(sitemod.fit, fit.measures=TRUE)
+
+#plot our CFA. you can change layout with layout = argument. see ?semPaths() for more. 
+semPlot::semPaths(sitemod.fit, "par", edge.label.cex = 1.2, fade = FALSE)
+title("TEJ")
+
+#------------------------------------------------------------------------------
+
+#sem for TRJ
+data<-subset(norm1,subpopulation=='TRJ')
+sitemod <- 'HHGW~FGN+PNN+FLN
+            FGN~~PNN
+            PNN~~FLN
+            FGN~DTH+PTH
+            PNN~DTH+PTH
+            FLN~DTH+PTH
+            DTH~~PTH'        
+
+# model/sem anylysis
+sitemod.fit <- lavaan::sem(sitemod, data = data)
+
+#summary of the results
+summary(sitemod.fit, fit.measures=TRUE)
+
+#plot our CFA. you can change layout with layout = argument. see ?semPaths() for more. 
+semPlot::semPaths(sitemod.fit, "par", edge.label.cex = 1.2, fade = FALSE)
+title("TRJ")
+
+
+```
+
+Based on the Root Mean Square Error of Approximation (RMSEA > 0.5) and Standardized Root Mean Square Residual (SRMSR < 0.5), the model was a good fit for the data. Test weight was significantly affected in all rice sub-populations.
+
+  **Direct and Indirect Effects**
+  
+  For all subpopulations, a negative direct effect on HHGW was observed in FLN. In ADMIX subpopulation, FGN, PNN and FLN accounted for 58% (R2 = 0.58) of the variation in HHGW. FLN had the strongest negative effect on HHGW (β = -0.77, p < 0.05), this implies that if FLN was increased by one standard deviation with FGN and PNN held constant, HHGW will decrease by 0.77 standard deviations. PNN negatively affected HHGW (β = -0.47), while FGN positively affected HHGW (β = 0.40) at p < 0.05. There was a significant indirect effect (p < 0.05) of PTH on HHGW via DTH and FLN. The double-headed arrow between DTH and PTH indicates a significant relationship (p < 0.05) but assumes no causality. 
+  
+In ARO subpopulation, FLN, PNN and FGN accounted for 22 % (R2 = 0.22) of the variation in HHGW. The strongest negative direct effect was observed in FLN (β = -0.85, p < 0.05), while PNN and FGN had positive effects on HHGW. All indirect effects of PTH and DTH via FGN, PNN and FLN were all insignificant (p > 0.05).
+In AUS subpopulation, all agronomic traits accounted for 33% (R2 = 0.33) of the variation in HHGW. The strongest direct effect on HHGW was observed in FLN (β = -0.98, p < 0.05). PNN had a direct negative effect (β = -0.56, p < 0.05) while FGN had a direct positive effect (β = 0.46, p < 0.05). PTH and DTH had significant indirect effects on HHGW. PTH had effect on HHGW via FLN, PNN and FGN while DTH effect was via FGN and FLN. 
+
+For IND, the only significant direct effects on HHGW were observed in FLN (β = -0.96, p < 0.05) and FGN (β = 0.71, p < 0.05) which had negative and positive respectively. These traits accounted for 49% (R2 = 0.49) of the variation in HHGW. All indirect effects were insignificant (p > 0.05). 
+For TEJ, only PNN accounted for all the variation in HHGW (R2 = 0.66) and was the only trait with a significant direct effect on HHGW (β = -0.42, p < 0.05). A significant indirect effect on HHGW was observed in PTH via DTH, FLN and PNN and also a negative effect via PNN (p < 0.05). DTH also had a significant indirect effect via FLN and PNN (p < 0.05).
+
+For TRJ, FLN and PNN accounted for the total variation in HHGW (R2 = 0.50). Both traits had a negative direct effect on HHGW, (β = -0.61, p < 0.05) and (β = -0.94, p < 0.05) for FLN and PNN respectively. A significant indirect effect was observed in PTHT via DTH and FLN (p < 0.05), while other indirect effects were insignificant (p > 0.05). 
+
+
+**Path Summary**
+
+```{r path}
+
+# Path summary
+# I created a result summary table on excel
+sem <- read.csv("./raw_data/SEM_result.csv")
+
+sem %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")          # Using KableExtra table formatting
+```
+
+  **Predicting test weight with Florescence per panicle**
+
+```{r does florescence per panicle predict test weight}
+
+# Does florescence per panicle predict test weight?
+
+# Explore data
+ggplot(norm1,
+       aes(x = HHGW, y = FLN)) +
+  geom_point() +
+  stat_smooth(method = "lm")
+
+# Fit a model
+rice_mlr <- glm(FLN ~ HHGW + region,
+                 data = norm1,
+                 family = gaussian(link = "identity"))
+
+# assumptions
+plot(rice_mlr, which = 1)
+plot(rice_mlr, which = 2)
+shapiro.test(residuals(rice_mlr))
+plot(rice_mlr, which = 4)
+
+# view residuals
+residualPlots(rice_mlr)
+
+# include residuals into data
+norm1 <- norm1 %>%
+  add_residuals(rice_mlr)
+
+# plot residuals 
+qplot(subpopulation, resid, data = norm1, geom = "boxplot")
+
+
+# test of interaction between mass and species
+rice_int <- glm(FLN ~ HHGW * region * subpopulation,
+                 data = norm1,
+                 family = gaussian(link = "identity"))
+
+residualPlots(rice_int)
+
+Anova(rice_int)
+Anova(rice_mlr)
+
+# post-hocs what is the effect of subpopulation and region at the average level of HHGW
+rice_em <- emmeans(rice_mlr, specs = ~ region,
+                    at = list(HHGW = 4))  # for specificity
+
+
+# check which slopes are statistically different
+rice_em %>%
+  contrast(method = "tukey") %>%
+  data.frame() %>%
+  kbl(format = 'html') %>%
+  kable_paper() %>%
+  scroll_box(width = "700px",
+             height = "350px")
+
+
+# plot comparison
+multcomp::cld(rice_em, adjust="tukey") %>%
+  ggplot(aes(x = region, y = emmean, 
+             ymin = asymp.LCL, ymax = asymp.UCL,
+             color = factor(.group))) +
+  geom_pointrange() +
+  coord_flip() +
+  labs(title = "Slope comparison across regions")
+
+
+# visualize!
+rice_newdat <- modelr::data_grid(norm1,
+                                  region = unique(region),
+                                  HHGW = seq_range(HHGW, n = 100))
+
+
+# create data predictions
+rice_predict <- predict(rice_mlr,
+                         newdata = rice_newdat,
+                         type = "response",
+                         interval = "confidence")
+
+# add data predictions
+rice_newdat <- rice_newdat %>%
+  mutate(FLN = rice_predict)
+
+# plot regression on predicted data
+ggplot(norm1,
+       aes(x = HHGW, y = FLN, color = region)) +
+  geom_point()+
+  geom_line(data = rice_newdat) +
+  labs(title = "Regression on predicted data")
+
+
+# compare means of new fit
+rice_newfit <- emmeans(rice_mlr, specs = ~ region + HHGW,
+                        at = list(HHGW = seq(1,3, length.out = 100))) %>%
+  as_tibble() %>%
+  mutate(FLN = emmean)
+
+# plot regresion slopes with prediction intervals
+ggplot(norm1,
+       aes(x = HHGW, y = FLN, color = region)) +
+  geom_point() +
+  geom_line(data = rice_newfit) +
+  geom_ribbon(data = rice_newfit,
+              aes(ymin = asymp.LCL, ymax = asymp.UCL, group = region, colour = region),
+              alpha = 0.1, color = "lightgrey") +
+  theme_classic() +
+  labs(title = "Regression on predicted data showing prediction intervals")
+
+```
+
+The linear regression passed all necessary assumptions. All residuals were clustered close to the regression line and the cook distance was 0.04 indicating normality of data. Comparison of slopes with ‘emmeans’ showed that slopes were not statistically different. Regression with the predicted data revealed slope alignment within the predicted values while all regression lines fell within the prediction interval.
+
+
+# Discussion
+
+Total florets per panicle has the most significant association with test weight which agrees with the result of (Ren et al., 2020), where altering meristem determinacy and restoring lateral floret formation significantly increased grains per panicle and subsequently yield. Plant height is a significant morphological trait influencing yield performance. Molecular cloning and functional analyses of several genes associated with PTH in rice have revealed connections to the synthesis and regulation of the phytohormone (gibberellin) (Miedaner et al., 2019). TEJ was observed to have the highest test weight which shows a significant relationship with plant height based on the SEM analysis. Indirect effect traits like DTH affects test weight via FLN and should be fully considered for breeding purposes in TEJ and TRJ subpopulations.
+
+
+# Conclusion
+
+This research was able to assess the relationship between test weight and other agronomic traits and identify significant associations. The major determinant of test weight is the total floret per panicle except in Temperate japonica, where test weight is determined by plant height. Also the prediction of test weight across regions using floret number gave a positive result. Results obtained from this study will improve crop management techniques in rice breeders. 
+
+
+
+# References
+
+Deivasigamani S, & Swaminathan C. (2018). Evaluation of Seed Test Weight on Major Field Crops. Www.Arcjournals.Org International Journal of Research Studies in Agricultural Sciences, 4(1), 2454–6224. [crossref](https://doi.org/10.20431/2454-6224.0401001)
+
+Eizenga, G. C., Ali, M. L., Bryant, R. J., Yeater, K. M., McClung, A. M., & McCouch, S. R. (2014). Registration of the Rice Diversity Panel 1 for Genomewide Association Studies. Journal of Plant Registrations, 8(1), 109–116. [crossref](https://doi.org/10.3198/jpr2013.03.0013crmp)
+
+Li, R., Li, M., Ashraf, U., Liu, S., & Zhang, J. (2019). Exploring the relationships between yield and yield-related traits for rice varieties released in china from 1978 to 2017. Frontiers in Plant Science. [crossref](https://doi.org/10.3389/fpls.2019.00543)
+
+Miedaner, T., Laidig, F., Zhao, J., Zhang, J., Li, R., Li, M., Ashraf, U., & Liu, S. (2019). Exploring the Relationships Between Yield and Yield-Related Traits for Rice Varieties Released in China From 1978 to 2017. [crossref](https://doi.org/10.3389/fpls.2019.00543)
+
+Prakash Poudel, A. (2018). Analysis of Growth and Yield Attributing Characteristic of Direct Seeded Upland Rice Genotypes in Western Hills of Nepal. In Acta Scientific Agriculture (Vol. 2).
+
+Puji Lestari, A., Sopandie, D., & Aswidinnoor, H. (2015). Panicle Length and Weight Performance of F3 Population from Local and Introduction Hybridization of Rice Varieties. HAYATI Journal of Biosciences April, 22(2), 87–92. [crossref](https://doi.org/10.4308/hjb.22.2.87)
+
+Regression, M., & Models, E. (2005). c ontRibutions Commentary. Commentary, 86(October), 283–295. [crossref](http://www.esajournals.org/doi/abs/10.1890/0012-9623(2007)88[72:AHOTES]2.0.CO;2
+
+Ren, D., Li, Y., He, G., & Qian, Q. (2020). Multifloret spikelet improves rice yield. New Phytologist, 225(6), 2301–2306.[crossref] (https://doi.org/10.1111/nph.16303)
+
+Saleh, M. M., Salem, K. F. M., & Elabd, A. B. (2020). Definition of selection criterion using correlation and path coefficient analysis in rice (Oryza sativa L .) genotypes.
+
+Venkateswarlu, B., Prasad, G. S. V, & Prasad, A. S. R. (n.d.). STUDIES ON THE NATURE OF RELATIONSHIPS BETWEEN GRAIN SIZE , SPIKELET NUMBER , GRAIN YIELD AND SPIKELET FILLING IN LATE DURATION VARIETIES OF RICE ( OR YZA SA TIVA L .) Grain number Grain size Productivity Rate of grain growth Rice Spikelet filling. 130(1981), 123–130.
+
+
+
+

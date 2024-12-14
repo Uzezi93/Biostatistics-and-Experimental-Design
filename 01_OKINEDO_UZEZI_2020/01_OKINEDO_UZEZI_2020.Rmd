@@ -1,0 +1,80 @@
+---
+author: "Uzezi Okinedo"
+date: "9/11/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+**1. Load quake data**
+
+```{r quakes}
+data ("quakes")
+```
+
+
+**Structure and Summary of quakes**
+
+```{r quakes structure and summary}
+str (quakes)
+summary (quakes)
+```
+
+
+**2. To show entirety of the column long**
+
+```{r quakes column long}
+column_long <- quakes$long
+column_long
+```
+
+
+
+**3. To see all unique values by creating a vector**
+
+```{r quakes unique values}
+magnitudes <- quakes [, 5]
+unique_mag <- unique(magnitudes)
+unique_mag
+```
+
+
+**All unique stations**
+
+```{r quakes stations}
+unique_stations <- unique(quakes$stations)
+all_unique_stations <- length(unique_stations)
+all_unique_stations
+```
+
+
+**4. Range of depths where quakes occur**
+
+```{r quakes depth range}
+depth_range <- range(quakes$depth)
+```
+
+
+**Where earthquake of the largest magnitude is found**
+
+
+```{r quake largest magnitude locations}
+max_magnitude <- max(quakes$mag)
+max_mag_data <- quakes[quakes$mag == max_magnitude, ]
+max_mag_station <- max_mag_data [, "stations"]
+max_mag_station
+```
+
+
+
+[GitHub Extra Credit](https://github.com/Uzezi93/BIOL-607-Homework-Fall-2020-/blob/master/01_OKINEDO_UZEZI_2020.md) 
+
+
+
+
+
