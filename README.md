@@ -1,1 +1,1 @@
-A compilation of all homeworks, midterms, projects, and final presentations for Computational Data Analysis (BIOL 607) class. 
+A compilation of all homework, midterms, projects, and final presentations for the Computational Data Analysis (BIOL 607) class. 
